@@ -16,10 +16,10 @@ module Pages
           Components::Card() do
             p { 'full' }
           end
-          Components::Card(size: 'half') do
-            p { 'half' }
+          Components::Card(title: 'Recent orders', size: 'half') do
+            Components::OrdersTable(orders: OrderListings.all)
           end
-          Components::Card(size: 'quarter') do
+          Components::Card(title: 'Workload', size: 'quarter') do
             p { 'quarter' }
           end
           Components::Card(size: 'quarter') do

@@ -283,14 +283,32 @@ h4 {
   background-color: #fff;
   border: 2px solid #ddd;
   border-radius: 8px;
-  padding: 20px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   font-size: 18px;
   font-weight: bold;
   color: #333;
   min-height: 100px;
+  overflow: hidden;
+}
+
+.card-header {
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 16px 20px;
+  flex-shrink: 0;
+}
+
+.card-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333333;
+  margin: 0;
+}
+
+.card-content {
+  padding: 20px;
+  flex: 1;
 }
 
 /* Mobile first: all cards full width */
@@ -300,11 +318,11 @@ h4 {
 
 /* Desktop styles */
 @media (min-width: 768px) {
-  .card.full {
+  .card.full, .card.half {
     flex: 1 1 100%;
   }
 
-  .card.half, .card.quarter {
+  .card.quarter {
     flex: 1 1 calc(50% - 10px);
   }
 }
@@ -323,3 +341,65 @@ h4 {
   }
 }
 
+/* Table Styles */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: #ffffff;
+
+  .status-badge {
+    display: block;
+    text-align: center;
+  }
+}
+
+thead {
+  border-bottom: 2px solid #e0e0e0;
+}
+
+th {
+  padding: 12px 8px;
+  text-align: left;
+  font-weight: 600;
+  color: #333333;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #555555;
+}
+
+tr:hover {
+  background: #f8f9fa;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Money formatting */
+.money {
+  text-align: right;
+  font-weight: 600;
+  color: #4CAF50;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25em 0.6em;
+  color: #fff;
+  background: #e2e8f0;
+  border-radius: 0.25em;
+}
+
+.status-badge.open {
+  background: #68d391;
+}
+.status-badge.archived {
+  background: #718096;
+}
