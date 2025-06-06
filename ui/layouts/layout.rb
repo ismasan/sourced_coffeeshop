@@ -5,8 +5,12 @@ module Layouts
       @sse = sse
     end
 
-    private def current_page?(path)
-      helpers.request.path.start_with?(path)
+    private def current_page?(path, exact: false)
+      if exact
+        helpers.request.path == path
+      else
+        helpers.request.path.start_with?(path)
+      end
     end
 
     def view_template
@@ -23,6 +27,7 @@ module Layouts
         body(data: _d.signals(fetching: false, modal: false).to_h) do
           div class: 'nav' do
             div class: 'link-group' do
+              a(href: '/', class: ('current' if current_page?('/', exact: true) )) { 'Home' }
               a(href: '/cashier', class: ('current' if current_page?('/cashier') )) { 'Cashier' }
               a(href: '/barista', class: ('current' if current_page?('/barista'))) { 'Barista' }
             end
