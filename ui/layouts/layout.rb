@@ -29,6 +29,7 @@ module Layouts
             div class: 'link-group' do
               span { "logged in as #{helpers.current_user.username}" }
               a(class: 'logout', href: '/logout') { 'Logout' }
+              a(class: 'system', href: '/sourced') { '⚙' }
             end
           end
 
