@@ -44,7 +44,7 @@ class App < Sinatra::Base
 
   get '/?' do
     if logged_in?
-      phlex Pages::HomePage.new(lists: Todos::Listings.all, layout: true)
+      phlex Pages::HomePage.new(layout: true)
     else
       phlex Pages::LoginPage.new
     end
@@ -66,5 +66,9 @@ class App < Sinatra::Base
   get '/logout/?' do
     session.delete :username
     redirect '/'
+  end
+
+  get '/cashier' do
+    phlex Pages::CashierPage.new(layout: true)
   end
 end
