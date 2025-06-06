@@ -22,9 +22,13 @@ class App < Sinatra::Base
       @current_user ||= User.new(username: session[:username])
     end
 
+    def order_id
+      ['order', Time.now.strftime('%Y%m%H'), SecureRandom.hex(4)].join('-')
+    end
+
     def command_context
       @command_context ||= Sourced::CommandContext.new(
-        stream_id: SecureRandom.uuid,
+        stream_id: order_id,
         metadata: { 
           producer: 'UI',
           username: current_user&.username
@@ -70,5 +74,14 @@ class App < Sinatra::Base
 
   get '/cashier' do
     phlex Pages::CashierPage.new(layout: true)
+  end
+
+  post '/commands/?' do
+    cmd = command_context.build(params[:command].to_h)
+
+    Sourced::UI.streaming_command_errors(cmd, datastar) do |cmd|
+      Sourced.schedule_commands([cmd])
+      halt 204
+    end
   end
 end
