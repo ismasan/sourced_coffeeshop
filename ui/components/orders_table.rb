@@ -6,21 +6,21 @@ module Components
 
     def view_template
 
-      table do 
+      table(class: 'orders-table') do 
         thead do
-          th { 'Order ID' }
           th { 'status' }
-          th { 'created at' }
+          th(class: 'cell--order-id') { 'Order ID' }
+          th(class: 'cell--datetime') { 'created at' }
           th { 'staff' }
           th { 'total' }
         end
         tbody do
           @orders.each do |order|
             tr do
-              td { a(href: url("/orders/#{order.id}")) { order.id } }
               td do
                 Components::StatusBadge(order.status)
               end
+              td { a(href: url("/orders/#{order.id}")) { order.id } }
               td { order.created_at.strftime('%Y-%m-%d %H:%M') }
               td { order.members.join(', ') }
               td(class: 'money') { order.total }

@@ -14,7 +14,7 @@ module Pages
       div id: 'main' do
         div class: 'cards-container' do
           Components::Card(size: 'two-thirds') do |c|
-            c.header('Aaaaa')
+            c.header('Products')
             c.content do 
               p { 'gello'}
             end

@@ -373,6 +373,13 @@ table {
 
 thead {
   border-bottom: 2px solid #e0e0e0;
+
+  th.cell--datetime {
+    width: 13em;
+  }
+  th.cell--order-id {
+    width: 18em;
+  }
 }
 
 th {
