@@ -10,20 +10,12 @@ module Pages
 
     def container
       div id: 'main' do
-        h1 { 'Gello' }
-
         div class: 'cards-container' do
-          Components::Card() do
-            p { 'full' }
-          end
           Components::Card(title: 'Recent orders', size: 'half') do
             Components::OrdersTable(orders: OrderListings.all)
           end
-          Components::Card(title: 'Workload', size: 'quarter') do
-            p { 'quarter' }
-          end
-          Components::Card(size: 'quarter') do
-            p { 'quarter' }
+          Components::Card(title: 'Workload', size: 'half') do
+            img src: '/images/simple_order_throughput_chart.svg', alt: 'Workload Chart', class: 'workload-chart'
           end
         end
       end

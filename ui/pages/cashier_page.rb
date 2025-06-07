@@ -7,12 +7,17 @@ module Pages
 
     private
 
-    def title = 'Cachier - Sourced Coffee'
+    def title = 'Cashier - Sourced Coffee'
 
     def container
       div id: 'main' do
-        div(class: 'actions') do
-          Components::StartOrderCommand()
+        div class: 'cards-container' do
+          Components::Card(title: 'Actions', size: 'half') do
+            Components::StartOrderCommand()
+          end
+          Components::Card(title: 'Recent orders', size: 'half') do
+            Components::OrdersTable(orders: OrderListings.all)
+          end
         end
       end
     end
