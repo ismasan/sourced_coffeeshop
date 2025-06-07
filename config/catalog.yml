@@ -1,0 +1,398 @@
+# Coffee Shop Product Catalog
+# Full prices in cents for each variant
+
+espresso:
+  name: "Espresso"
+  categories: ["Hot Drinks"]
+  variants:
+    single:
+      name: "Single Shot"
+      price: 280
+    double:
+      name: "Double Shot"
+      price: 360
+
+americano:
+  name: "Americano"
+  categories: ["Hot Drinks"]
+  variants:
+    small:
+      name: "Small"
+      price: 320
+    medium:
+      name: "Medium"
+      price: 380
+    large:
+      name: "Large"
+      price: 440
+
+cappuccino:
+  name: "Cappuccino"
+  categories: ["Hot Drinks"]
+  variants:
+    small:
+      name: "Small"
+      price: 420
+    medium:
+      name: "Medium"
+      price: 480
+    large:
+      name: "Large"
+      price: 540
+
+latte:
+  name: "Latte"
+  categories: ["Hot Drinks"]
+  variants:
+    small:
+      name: "Small"
+      price: 480
+    medium:
+      name: "Medium"
+      price: 540
+    large:
+      name: "Large"
+      price: 600
+
+latte-macchiato:
+  name: "Latte Macchiato"
+  categories: ["Hot Drinks"]
+  variants:
+    small:
+      name: "Small"
+      price: 520
+    medium:
+      name: "Medium"
+      price: 580
+    large:
+      name: "Large"
+      price: 640
+
+cortado:
+  name: "Cortado"
+  categories: ["Hot Drinks"]
+  variants:
+    regular:
+      name: "Regular"
+      price: 380
+
+flat-white:
+  name: "Flat White"
+  categories: ["Hot Drinks"]
+  variants:
+    small:
+      name: "Small"
+      price: 450
+    medium:
+      name: "Medium"
+      price: 510
+
+mocha:
+  name: "Mocha"
+  categories: ["Hot Drinks"]
+  variants:
+    small:
+      name: "Small"
+      price: 550
+    medium:
+      name: "Medium"
+      price: 620
+    large:
+      name: "Large"
+      price: 690
+
+macchiato:
+  name: "Macchiato"
+  categories: ["Hot Drinks"]
+  variants:
+    single:
+      name: "Single Shot"
+      price: 320
+    double:
+      name: "Double Shot"
+      price: 400
+
+pour-over:
+  name: "Pour Over"
+  categories: ["Hot Drinks"]
+  variants:
+    single-origin-ethiopia:
+      name: "Single Origin Ethiopia"
+      price: 600
+    single-origin-colombia:
+      name: "Single Origin Colombia"
+      price: 580
+    house-blend:
+      name: "House Blend"
+      price: 480
+
+chemex:
+  name: "Chemex"
+  categories: ["Hot Drinks"]
+  variants:
+    single-origin-guatemala:
+      name: "Single Origin Guatemala"
+      price: 800
+    single-origin-kenya:
+      name: "Single Origin Kenya"
+      price: 830
+    house-blend:
+      name: "House Blend"
+      price: 650
+
+v60:
+  name: "V60"
+  categories: ["Hot Drinks"]
+  variants:
+    single-origin-brazil:
+      name: "Single Origin Brazil"
+      price: 620
+    single-origin-ethiopia:
+      name: "Single Origin Ethiopia"
+      price: 640
+    house-blend:
+      name: "House Blend"
+      price: 520
+
+aeropress:
+  name: "AeroPress"
+  categories: ["Hot Drinks"]
+  variants:
+    light-roast:
+      name: "Light Roast"
+      price: 480
+    medium-roast:
+      name: "Medium Roast"
+      price: 480
+    dark-roast:
+      name: "Dark Roast"
+      price: 480
+
+cold-brew:
+  name: "Cold Brew"
+  categories: ["Cold Drinks"]
+  variants:
+    small:
+      name: "Small"
+      price: 380
+    medium:
+      name: "Medium"
+      price: 460
+    large:
+      name: "Large"
+      price: 540
+
+nitro-cold-brew:
+  name: "Nitro Cold Brew"
+  categories: ["Cold Drinks"]
+  variants:
+    small:
+      name: "Small"
+      price: 450
+    medium:
+      name: "Medium"
+      price: 530
+
+iced-latte:
+  name: "Iced Latte"
+  categories: ["Cold Drinks"]
+  variants:
+    small:
+      name: "Small"
+      price: 480
+    medium:
+      name: "Medium"
+      price: 540
+    large:
+      name: "Large"
+      price: 600
+
+iced-americano:
+  name: "Iced Americano"
+  categories: ["Cold Drinks"]
+  variants:
+    small:
+      name: "Small"
+      price: 340
+    medium:
+      name: "Medium"
+      price: 400
+    large:
+      name: "Large"
+      price: 460
+
+affogato:
+  name: "Affogato"
+  categories: ["Food"]
+  variants:
+    vanilla:
+      name: "Vanilla Gelato"
+      price: 580
+    chocolate:
+      name: "Chocolate Gelato"
+      price: 600
+
+matcha-latte:
+  name: "Matcha Latte"
+  categories: ["Hot Drinks", "Cold Drinks"]
+  variants:
+    hot-small:
+      name: "Hot Small"
+      price: 520
+    hot-medium:
+      name: "Hot Medium"
+      price: 580
+    iced-medium:
+      name: "Iced Medium"
+      price: 600
+
+chai-latte:
+  name: "Chai Latte"
+  categories: ["Hot Drinks", "Cold Drinks"]
+  variants:
+    hot-small:
+      name: "Hot Small"
+      price: 450
+    hot-medium:
+      name: "Hot Medium"
+      price: 510
+    iced-medium:
+      name: "Iced Medium"
+      price: 530
+
+golden-milk-latte:
+  name: "Golden Milk Latte"
+  categories: ["Hot Drinks"]
+  variants:
+    hot-small:
+      name: "Hot Small"
+      price: 480
+    hot-medium:
+      name: "Hot Medium"
+      price: 540
+
+hot-chocolate:
+  name: "Hot Chocolate"
+  categories: ["Hot Drinks"]
+  variants:
+    small:
+      name: "Small"
+      price: 420
+    medium:
+      name: "Medium"
+      price: 480
+    large:
+      name: "Large"
+      price: 540
+
+croissant:
+  name: "Croissant"
+  categories: ["Pastries"]
+  variants:
+    plain:
+      name: "Plain"
+      price: 380
+    almond:
+      name: "Almond"
+      price: 460
+    chocolate:
+      name: "Chocolate"
+      price: 440
+
+danish:
+  name: "Danish"
+  categories: ["Pastries"]
+  variants:
+    cheese:
+      name: "Cheese"
+      price: 420
+    berry:
+      name: "Mixed Berry"
+      price: 460
+    apple:
+      name: "Apple Cinnamon"
+      price: 460
+
+muffin:
+  name: "Muffin"
+  categories: ["Pastries"]
+  variants:
+    blueberry:
+      name: "Blueberry"
+      price: 350
+    banana-walnut:
+      name: "Banana Walnut"
+      price: 370
+    lemon-poppy:
+      name: "Lemon Poppy Seed"
+      price: 370
+
+scone:
+  name: "Scone"
+  categories: ["Pastries"]
+  variants:
+    plain:
+      name: "Plain"
+      price: 380
+    cranberry:
+      name: "Cranberry"
+      price: 420
+    chocolate-chip:
+      name: "Chocolate Chip"
+      price: 440
+
+avocado-toast:
+  name: "Avocado Toast"
+  categories: ["Food"]
+  variants:
+    classic:
+      name: "Classic"
+      price: 850
+    everything-bagel:
+      name: "Everything Bagel Seasoning"
+      price: 900
+    poached-egg:
+      name: "With Poached Egg"
+      price: 1050
+
+bagel:
+  name: "Bagel"
+  categories: ["Food"]
+  variants:
+    plain:
+      name: "Plain"
+      price: 320
+    everything:
+      name: "Everything"
+      price: 340
+    sesame:
+      name: "Sesame"
+      price: 340
+    with-cream-cheese:
+      name: "With Cream Cheese"
+      price: 470
+
+granola-bowl:
+  name: "Granola Bowl"
+  categories: ["Food"]
+  variants:
+    yogurt-berries:
+      name: "Greek Yogurt & Berries"
+      price: 750
+    acai:
+      name: "Acai Bowl"
+      price: 950
+
+quiche:
+  name: "Quiche"
+  categories: ["Food"]
+  variants:
+    lorraine:
+      name: "Lorraine"
+      price: 680
+    vegetarian:
+      name: "Vegetarian"
+      price: 680
+    salmon:
+      name: "Smoked Salmon"
+      price: 830
