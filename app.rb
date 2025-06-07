@@ -23,7 +23,7 @@ class App < Sinatra::Base
     end
 
     def order_id
-      ['order', Time.now.strftime('%Y%m%H'), SecureRandom.hex(4)].join('-')
+      "O#{Time.now.strftime('%Y%m%H')}-#{SecureRandom.hex(4).upcase}"
     end
 
     def command_context
