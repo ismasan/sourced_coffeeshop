@@ -18,12 +18,12 @@ class OrderListings < Sourced::Projector::EventSourced
 
   class Listing < Plumb::Types::Data
     attribute :id, String
-    attribute :total, Plumb::Types::Integer.default(0), writer: true
-    attribute :status, Plumb::Types::String.default('open'), writer: true
-    attribute :seq, Plumb::Types::Integer.default(0), writer: true
-    attribute :members, Plumb::Types::Array[String].default { [] }
-    attribute :created_at, Plumb::Types::Forms::Time.nullable, writer: true
-    attribute :updated_at, Plumb::Types::Forms::Time.nullable, writer: true
+    attribute :total, Types::Integer.default(0), writer: true
+    attribute :status, Types::String.default('open'), writer: true
+    attribute :seq, Types::Integer.default(0), writer: true
+    attribute :members, Types::Array[String].default { [] }
+    attribute :created_at, Types::Forms::Time.nullable, writer: true
+    attribute :updated_at, Types::Forms::Time.nullable, writer: true
   end
 
   # Let's give this class a repository interface
