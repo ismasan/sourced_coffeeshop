@@ -295,8 +295,16 @@ h4 {
 .card-header {
   background: #f8f9fa;
   border-bottom: 1px solid #e0e0e0;
-  padding: 16px 20px;
+  padding: 10px 20px;
+  min-height: 55px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  .status-badge {
+    display: inline;
+  }
 }
 
 .card-header h3 {
@@ -321,13 +329,12 @@ h4 {
   .card.full, .card.half {
     flex: 1 1 100%;
   }
-
-  .card.quarter {
+  .card.quarter, .card.three-quarters {
     flex: 1 1 calc(50% - 10px);
   }
 }
 /* Big Desktop styles */
-@media (min-width: 1600px) {
+@media (min-width: 1200px) {
   .card.full {
     flex: 1 1 100%;
   }
@@ -338,6 +345,16 @@ h4 {
 
   .card.quarter {
     flex: 1 1 calc(25% - 15px);
+  }
+
+  .card.three-quarters {
+    flex: 1 1 calc(75% - 10px);
+  }
+  .card.one-third {
+    flex: 1 1 calc(33% - 10px);
+  }
+  .card.two-thirds {
+    flex: 1 1 calc(66% - 10px);
   }
 }
 

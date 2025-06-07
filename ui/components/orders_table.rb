@@ -19,7 +19,7 @@ module Components
             tr do
               td { a(href: url("/orders/#{order.id}")) { order.id } }
               td do
-                span(class: ['status-badge', order.status]) { order.status }
+                Components::StatusBadge(order.status)
               end
               td { order.created_at.strftime('%Y-%m-%d %H:%M') }
               td { order.members.join(', ') }

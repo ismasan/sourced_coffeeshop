@@ -11,11 +11,18 @@ module Pages
     def container
       div id: 'main' do
         div class: 'cards-container' do
-          Components::Card(title: 'Recent orders', size: 'half') do
-            Components::OrdersTable(orders: OrderListings.all)
+          Components::Card(size: 'half') do |c|
+            c.header 'Recent orders'
+            c.content do
+              Components::OrdersTable(orders: OrderListings.all)
+            end
           end
-          Components::Card(title: 'Workload', size: 'half') do
-            img src: '/images/simple_order_throughput_chart.svg', alt: 'Workload Chart', class: 'workload-chart'
+
+          Components::Card(size: 'half') do |c|
+            c.header 'Workload'
+            c.content do
+              img src: '/images/simple_order_throughput_chart.svg', alt: 'Workload Chart', class: 'workload-chart'
+            end
           end
         end
       end

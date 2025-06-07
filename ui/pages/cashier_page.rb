@@ -12,11 +12,18 @@ module Pages
     def container
       div id: 'main' do
         div class: 'cards-container' do
-          Components::Card(title: 'Actions', size: 'half') do
-            Components::StartOrderCommand()
+          Components::Card(size: 'half') do |c|
+            c.header 'Actions'
+            c.content do
+              Components::StartOrderCommand()
+            end
           end
-          Components::Card(title: 'Recent orders', size: 'half') do
-            Components::OrdersTable(orders: OrderListings.all)
+
+          Components::Card(size: 'half') do |c|
+            c.header 'Recent orders'
+            c.content do
+              Components::OrdersTable(orders: OrderListings.all)
+            end
           end
         end
       end
