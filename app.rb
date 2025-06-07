@@ -76,7 +76,23 @@ class App < Sinatra::Base
     phlex Pages::CashierPage.new(layout: true)
   end
 
+  get '/orders/:id/?' do |id|
+    order = Order.load(id)
+    phlex Pages::OrderPage.new(order: order.state, layout: true)
+  end
+
+  post '/commands/start-order' do
+    cmd = command_context.build(params[:command].to_h)
+    raise "Invalid command #{cmd.inspect}" if !cmd.valid?
+    raise "Not an Order::Start command #{cmd.inspect}" if !cmd.is_a?(Order::Start)
+
+    order, _ = Sourced.handle_command(cmd)
+    redirect "/orders/#{order.id}"
+  end
+
   post '/commands/?' do
+    # TODO: eventually we want to check
+    # that a given user is allowed to run a command
     cmd = command_context.build(params[:command].to_h)
 
     Sourced::UI.streaming_command_errors(cmd, datastar) do |cmd|
