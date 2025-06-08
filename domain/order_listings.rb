@@ -55,4 +55,8 @@ class OrderListings < Sourced::Projector::EventSourced
   event Order::Started do |listing, event|
     listing.created_at = event.created_at
   end
+
+  event Order::ItemAdded do |listing, event|
+    listing.total += event.payload.price * event.payload.quantity
+  end
 end
