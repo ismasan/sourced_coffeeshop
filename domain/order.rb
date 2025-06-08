@@ -46,7 +46,7 @@ class Order < Sourced::Actor
     attribute :quantity, Types::Lax::Integer
   end
 
-  ItemQuantityUpdated = Sourced::Command.define('orders.item_quantity_updated') do
+  ItemQuantityUpdated = Sourced::Event.define('orders.item_quantity_updated') do
     attribute :item_id, Types::String.present
     attribute :quantity, Types::Lax::Integer
   end
