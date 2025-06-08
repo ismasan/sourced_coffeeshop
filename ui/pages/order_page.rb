@@ -19,14 +19,38 @@ module Pages
               h3 { @order.id }
             end
             c.content do
-              ul do
-                li do
-                  strong { 'Total: ' }
-                  plain @order.total.to_s
+              div class: 'order-items' do
+                @order.items.values.each do |item|
+                  div class: 'order-item', id: item.id do
+                    h4 do
+                      strong { item.product_name }
+                      span(class: 'item-variant') { item.variant_name }
+                      span(class: 'item-quantity') do
+                        span(class: 'quantity') { item.quantity.to_s }
+                        plain 'x'
+                        span(class: 'price') { item.price.to_s }
+                      end
+                      span(class: 'item-total') { item.total.to_s }
+                    end
+                  end
                 end
               end
-              if @order.open?
-                a(class: 'nice-button', data: _d.on.click.get(url("/orders/#{@order.id}/catalog")).to_h) { 'Add products'}
+
+              div class: 'order-actions' do
+                if @order.open?
+                  a(class: 'btn primary', data: _d.on.click.get(url("/orders/#{@order.id}/catalog")).to_h) { '+ products'}
+                end
+              end
+
+              ul(class: 'order-summary') do
+                li(class: 'order-summary--tax') do
+                  strong { 'Tax: ' }
+                  span { '$2.00' }
+                end
+                li(class: 'order-summary--total') do
+                  strong { 'Total: ' }
+                  span { @order.total.to_s }
+                end
               end
             end
           end
