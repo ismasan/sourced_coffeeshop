@@ -24,7 +24,7 @@ class Order < Sourced::Actor
     attribute :price, Types::Lax::Integer.default(0)
   end
 
-  ItemAdded = Sourced::Command.define('orders.item_added') do
+  ItemAdded = Sourced::Event.define('orders.item_added') do
     attribute :product_id, String
     attribute :variant_id, String
     attribute :product_name, String
@@ -33,12 +33,21 @@ class Order < Sourced::Actor
     attribute :price, Integer
   end
 
+  RemoveItem = Sourced::Command.define('orders.remove_item') do
+    attribute :item_id, Types::String.present
+  end
+
+  ItemRemoved = Sourced::Event.define('orders.item_removed') do
+    attribute :item_id, String
+  end
+
   class State
     VAT = 0.135
 
     Item = Struct.new(:product_id, :variant_id, :product_name, :variant_name, :price, :quantity, keyword_init: true) do
       def total = price * quantity
       def id = [product_id, variant_id].join('-')
+      def full_name = [product_name, variant_name].join(' - ')
 
       def self.build(product_id:, variant_id:, product_name:, variant_name:, quantity: 1, price: 0)
         new(
@@ -61,7 +70,7 @@ class Order < Sourced::Actor
       @status = :new
     end
 
-    def subtotal = items.values.sum(&:total)
+    def subtotal = items.values.sum(Money.zero, &:total)
     def tax = subtotal * VAT
     def total = subtotal + tax
 
@@ -100,5 +109,15 @@ class Order < Sourced::Actor
 
   event ItemAdded do |state, event|
     state.add_item(**event.payload)
+  end
+
+  command RemoveItem do |state, cmd|
+    return unless state.open? && state.items[cmd.payload.item_id]
+
+    event ItemRemoved, cmd.payload
+  end
+
+  event ItemRemoved do |state, event|
+    state.items.delete(event.payload.item_id)
   end
 end

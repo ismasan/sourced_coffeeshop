@@ -24,17 +24,22 @@ class OrderListings < Sourced::Projector::EventSourced
     Sourced.config.backend.pubsub.publish('system', events.last.follow(System::Updated))
   end
 
+  Items = Types::Hash[Types::Symbol.transform(String, &:to_s), Types::Hash.default { {} }]
+
   class Listing < Plumb::Types::Data
     attribute :id, String
-    attribute :total, Types::Money.default { Money.zero }, writer: true
+    attribute :items, Items.default { {} }, writer: true
     attribute :status, Types::String.default('open'), writer: true
     attribute :seq, Types::Integer.default(0), writer: true
     attribute :members, Types::Array[String].default { [] }
     attribute :created_at, Types::Forms::Time.nullable, writer: true
     attribute :updated_at, Types::Forms::Time.nullable, writer: true
 
-    def to_h
-      super.merge(total: total.cents)
+    def total
+      cents = items.values.sum do |item|
+        item[:price].to_i * item[:quantity].to_i  
+      end
+      Money.from_cents(cents)
     end
   end
 
@@ -69,6 +74,14 @@ class OrderListings < Sourced::Projector::EventSourced
   end
 
   event Order::ItemAdded do |listing, event|
-    listing.total += Money.from_cents(event.payload.price * event.payload.quantity)
+    item_id = [event.payload.product_id, event.payload.variant_id].join('-')
+    item = { price: event.payload.price, quantity: 0 }
+
+    listing.items[item_id] ||= item
+    listing.items[item_id][:quantity] += event.payload.quantity
+  end
+
+  event Order::ItemRemoved do |listing, event|
+    listing.items.delete(event.payload.item_id)
   end
 end
