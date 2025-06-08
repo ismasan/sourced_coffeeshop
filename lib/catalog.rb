@@ -21,6 +21,16 @@ class Catalog
 
   Products = Types::Hash[String, ProductPipe]
 
+  Category = Struct.new(:name, :value, :count) do
+    def <=> (other)
+      name <=> other.name
+    end
+
+    def to_option
+      [name, value]
+    end
+  end
+
   def self.load
     data = YAML.load_file(File.join(__dir__, '..', 'config', 'catalog.yml'))
     products = Products.parse(data)
@@ -31,21 +41,43 @@ class Catalog
     @instance ||= load
   end
 
-  %i[find all by_category categories].each do |method|
-    define_singleton_method method do |*args|
-      instance.send(method, *args)
+  %i[search all categories].each do |method|
+    define_singleton_method method do |**args|
+      instance.send(method, **args)
     end
   end
 
-  attr_reader :products
+  def self.[](id)
+    instance[id]
+  end
+
+  attr_reader :products, :categories
+
+  ALL = 'all'
 
   def initialize(products)
     @products = products
     @category_index = build_category_index
+    all_cat = Category.new('All', ALL, @products.size)
+    @categories = [all_cat, *@category_index.values.sort]
   end
 
-  def find(id)
+  def [](id)
     products[id]
+  end
+
+  ByCategory = ->(category) do
+    proc do |list|
+      list.filter do |product|
+        product.categories.include?(category)
+      end
+    end
+  end
+
+  def search(category: nil)
+    query = ->(list) { list }
+    query = query >> ByCategory.(category) unless category.nil? || category == ALL
+    query.(all)
   end
 
   def all
@@ -56,12 +88,11 @@ class Catalog
     @category_index[category] || []
   end
 
-  def categories = @category_index.keys.sort
-
   private def build_category_index
     @products.values.each.with_object({}) do |product, memo|
       product.categories.each do |category|
-        (memo[category] ||= []) << product
+        memo[category] ||= Category.new(category, category, 0)
+        memo[category].count += 1
       end
     end
   end

@@ -83,9 +83,9 @@ class App < Sinatra::Base
 
   get '/orders/:id/catalog/?' do |id|
     datastar.send(:stream_no_heartbeat) do |sse|
-      sse.merge_fragments Components::Modal.new(
-        title: 'Catalog',
-        content: Components::Catalog.new(products: Catalog.all)
+      sse.merge_fragments Components::Catalog.new(
+        order_id: id, 
+        category: params[:cat]
       )
       sse.merge_signals modal: true
     end
