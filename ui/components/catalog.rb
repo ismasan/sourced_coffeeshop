@@ -56,7 +56,7 @@ module Components
               )
               form.button(type: 'submit', class: 'variant-button') do
                 span(class: 'variant-name') { variant.name }
-                span(class: 'variant-price') { "£#{(variant.price / 100.0).round(2)}" }
+                span(class: 'variant-price') { variant.price.format }
               end
             end
           end
