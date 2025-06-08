@@ -687,3 +687,26 @@ tbody tr:last-child td {
 .btn.danger:active {
   background: #ee2222;
 }
+
+/* Select Styles */
+select {
+  appearance: none;
+  background: #ffffff;
+  border: 2px solid #cccccc;
+  border-radius: 6px;
+  padding: 8px 32px 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+select:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+select:hover {
+  border-color: #999999;
+}
