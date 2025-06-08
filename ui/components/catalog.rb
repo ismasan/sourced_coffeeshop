@@ -52,7 +52,7 @@ module Components
                 variant_id: variant.id,
                 product_name: product.name,
                 variant_name: variant.name,
-                price: variant.price
+                price: variant.price.cents
               )
               form.button(type: 'submit', class: 'variant-button') do
                 span(class: 'variant-name') { variant.name }

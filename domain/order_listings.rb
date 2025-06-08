@@ -18,7 +18,7 @@ class OrderListings < Sourced::Projector::EventSourced
 
   class Listing < Plumb::Types::Data
     attribute :id, String
-    attribute :total, Types::Integer.default(0), writer: true
+    attribute :total, Types::Money.default { Money.zero }, writer: true
     attribute :status, Types::String.default('open'), writer: true
     attribute :seq, Types::Integer.default(0), writer: true
     attribute :members, Types::Array[String].default { [] }
@@ -57,6 +57,6 @@ class OrderListings < Sourced::Projector::EventSourced
   end
 
   event Order::ItemAdded do |listing, event|
-    listing.total += event.payload.price * event.payload.quantity
+    listing.total += Money.from_cents(event.payload.price * event.payload.quantity)
   end
 end

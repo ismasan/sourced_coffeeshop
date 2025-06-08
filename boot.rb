@@ -2,6 +2,7 @@
 
 require 'zeitwerk'
 require 'phlex-sinatra'
+require 'money'
 require 'sourced'
 require 'sourced/ui/components'
 require 'sequel'
@@ -30,6 +31,12 @@ module Phlex
     def helpers = @_context.view_context
   end
 end
+
+# Money
+I18n.config.available_locales = :en
+Money.default_currency = Money::Currency.new("GBP")
+Money.rounding_mode = BigDecimal::ROUND_HALF_EVEN
+Money.locale_backend = nil
 
 DATABASE_URL = ENV.fetch('DOCKER_DATABASE_URL') {ENV.fetch('DATABASE_URL')}
 

@@ -54,8 +54,10 @@ class Order < Sourced::Actor
 
     def open? = status == :open
 
-    def add_item(**kargs)
-      item = Item.build(**kargs)
+    def add_item(price:, **kargs)
+      price = Money.from_cents(price) if price.is_a?(Integer)
+
+      item = Item.build(price:, **kargs)
       if (it = @items[item.id])
         item.quantity += it.quantity
       end

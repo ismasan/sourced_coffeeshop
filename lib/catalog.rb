@@ -31,7 +31,7 @@ class Catalog
   class Variant < Types::Data
     attribute :id, Types::String
     attribute :name, Types::String
-    attribute :price, Types::Integer
+    attribute :price, Types::Money
   end
 
   class Product < Types::Data

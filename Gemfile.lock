@@ -40,10 +40,14 @@ GEM
     fiber-local (1.1.0)
       fiber-storage
     fiber-storage (1.0.1)
+    i18n (1.14.7)
+      concurrent-ruby (~> 1.0)
     io-event (1.10.1)
     json (2.12.2)
     logger (1.7.0)
     metrics (0.12.2)
+    money (6.19.0)
+      i18n (>= 0.6.4, <= 2)
     mustermann (3.0.3)
       ruby2_keywords (~> 0.0.1)
     nio4r (2.7.4)
@@ -86,6 +90,7 @@ PLATFORMS
 DEPENDENCIES
   datastar
   dotenv
+  money
   pg
   phlex (= 2.0.0.rc1)
   phlex-sinatra

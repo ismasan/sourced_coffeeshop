@@ -12,7 +12,7 @@ module Components
           th(class: 'cell--order-id') { 'Order ID' }
           th(class: 'cell--datetime') { 'created at' }
           th { 'staff' }
-          th { 'total' }
+          th { 'sub total' }
         end
         tbody do
           @orders.each do |order|
@@ -23,7 +23,7 @@ module Components
               td { a(href: url("/orders/#{order.id}")) { order.id } }
               td { order.created_at.strftime('%Y-%m-%d %H:%M') }
               td { order.members.join(', ') }
-              td(class: 'money') { order.total }
+              td(class: 'money') { order.total.format }
             end
           end
         end

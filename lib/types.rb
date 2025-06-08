@@ -13,6 +13,8 @@ module Types
     username: String.present
   ]
 
+  Money = Any[::Money] | Lax::Integer.transform(::Money) { |v| ::Money.from_cents(v) }
+
   # A Plumb helper to provide a blank default value for a type
   # example:
   #   attribute :services, Types::Array[String].with_blank_default

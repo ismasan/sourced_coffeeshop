@@ -17,6 +17,7 @@ gem 'sourced', github: 'ismasan/sourced'
 # gem 'sourced', path: '/Users/ismasan/code/personal/gems/sourced'
 # gem 'sourced-ui', path: '/Users/ismasan/code/personal/gems/sourced-ui'
 gem 'sourced-ui', github: 'ismasan/sourced-ui'
+gem 'money'
 gem 'zeitwerk', '~> 2.7'
 
 group :development do

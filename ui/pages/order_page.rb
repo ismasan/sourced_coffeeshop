@@ -28,9 +28,9 @@ module Pages
                       span(class: 'item-quantity') do
                         span(class: 'quantity') { item.quantity.to_s }
                         plain 'x'
-                        span(class: 'price') { item.price.to_s }
+                        span(class: 'price') { item.price.format }
                       end
-                      span(class: 'item-total') { item.total.to_s }
+                      span(class: 'item-total') { item.total.format }
                     end
                   end
                 end
@@ -45,15 +45,15 @@ module Pages
               ul(class: 'order-summary') do
                 li(class: 'order-summary--subtotal') do
                   strong { 'Sub total: ' }
-                  span { @order.subtotal.to_s }
+                  span { @order.subtotal.format }
                 end
                 li(class: 'order-summary--tax') do
                   strong { 'VAT: ' }
-                  span { @order.tax.to_s }
+                  span { @order.tax.format }
                 end
                 li(class: 'order-summary--total') do
                   strong { 'Total: ' }
-                  span { @order.total.to_s }
+                  span { @order.total.format }
                 end
               end
             end
