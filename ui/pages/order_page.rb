@@ -86,6 +86,10 @@ module Pages
           Sourced::UI::Components::Command(Order::Cancel, stream_id: @order.id, class: 'nice-form') do |form|
             form.button(class: 'btn danger', type: 'submit') { 'Cancel order' }
           end
+
+          Sourced::UI::Components::Command(Order::Place, stream_id: @order.id, class: 'nice-form') do |form|
+            form.button(class: 'btn primary', type: 'submit') { 'Place order' }
+          end
         end
       end
     end

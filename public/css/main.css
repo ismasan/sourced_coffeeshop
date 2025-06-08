@@ -433,8 +433,11 @@ tbody tr:last-child td {
 .status-badge.open {
   background: #68d391;
 }
-.status-badge.archived {
+.status-badge.canceled {
   background: #718096;
+}
+.status-badge.placed {
+  background: orange;
 }
 
 /* Products Grid */
@@ -842,6 +845,17 @@ select:hover {
 .order-actions {
   margin-bottom: 24px;
   text-align: right;
+}
+
+.order-next-steps {
+  display: flex;
+  gap: 16px;
+  form {
+    flex: 1;
+    button[type="submit"] {
+      width: 100%;
+    }
+  }
 }
 /* Mobile responsive adjustments */
 @media (max-width: 480px) {
