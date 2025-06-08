@@ -6,20 +6,42 @@ class Catalog
   StringToSymbol = Types::String.transform(Symbol, &:to_sym)
   SymbolizedHash = Types::Hash[StringToSymbol, Types::Any]
 
+  # turn {'foo' => { 'bar' => 1}}
+  # into {'foo' => { bar: 1, id: 'foo' }}
+  RecordsWithID = Types::Hash[String, SymbolizedHash].pipeline do |pl|
+    # copy hash keys to product IDs
+    pl.step do |result|
+      hash = result.value.each.with_object({}) do |(id, data), memo|
+        memo[id] = data.merge(id:)
+      end
+      result.valid(hash)
+    end
+  end
+
+  ProductsYAML = RecordsWithID >> Types::Hash[
+    String,
+    Types::Hash[
+      id: String,
+      name: String,
+      categories: [String],
+      variants: RecordsWithID
+    ]
+  ]
+
   class Variant < Types::Data
+    attribute :id, Types::String
     attribute :name, Types::String
     attribute :price, Types::Integer
   end
 
   class Product < Types::Data
+    attribute :id, Types::String
     attribute :name, Types::String
     attribute :categories, [String]
-    attribute :variants, Types::Hash[String, SymbolizedHash >> Variant]
+    attribute :variants, Types::Hash[String, Variant]
   end
 
-  ProductPipe = SymbolizedHash >> Product
-
-  Products = Types::Hash[String, ProductPipe]
+  Products = ProductsYAML >> Types::Hash[String, Product]
 
   Category = Struct.new(:name, :value, :count) do
     def <=> (other)
