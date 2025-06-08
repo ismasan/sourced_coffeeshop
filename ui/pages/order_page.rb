@@ -81,6 +81,22 @@ module Pages
     end
 
     def order_next_steps
+      if @order.placed?
+        div class: 'order-customer-name', data: _d.signals(_cnamedit: false).to_h do
+          Sourced::UI::Components::Command(Order::SetCustomerName, stream_id: @order.id, class: 'nice-form') do |form|
+            div class: 'input-row', data: { show: '$_cnamedit' } do
+              form.text_field(:customer_name, value: @order.customer_name, placeholder: 'Customer name')
+              form.button(class: 'btn primary', type: 'submit') { 'Update' }
+            end
+            p class: 'order-customer-name--edit', data: { show: '!$_cnamedit' } do
+              span { 'customer: ' }
+              strong { @order.customer_name || '--' }
+              a(href: '#', data: _d.on.click.run('$_cnamedit = true').to_h) { 'edit' }
+            end
+          end
+        end
+      end
+
       div class: 'order-next-steps' do
         if @order.open?
           Sourced::UI::Components::Command(Order::Cancel, stream_id: @order.id, class: 'nice-form') do |form|

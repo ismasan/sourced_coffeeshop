@@ -57,6 +57,14 @@ class Order < Sourced::Actor
   Place = Sourced::Command.define('orders.place')
   Placed = Sourced::Command.define('orders.placed')
 
+  SetCustomerName = Sourced::Command.define('orders.set_customer_name') do
+    attribute :customer_name, Types::String.present
+  end
+
+  CustomerNameSet = Sourced::Command.define('orders.customer_name_set') do
+    attribute :customer_name, String
+  end
+
   class State
     VAT = 0.135
 
@@ -78,12 +86,13 @@ class Order < Sourced::Actor
     end
 
     attr_reader :id, :items
-    attr_accessor :status
+    attr_accessor :status, :customer_name
 
     def initialize(id)
       @id = id
       @items = {}
       @status = :new
+      @customer_name = nil
     end
 
     def subtotal = items.values.sum(Money.zero, &:total)
@@ -91,6 +100,7 @@ class Order < Sourced::Actor
     def total = subtotal + tax
 
     def open? = status == :open
+    def placed? = status == :placed
 
     def add_item(price:, **kargs)
       price = Money.from_cents(price) if price.is_a?(Integer)
@@ -140,7 +150,7 @@ class Order < Sourced::Actor
   command UpdateItemQuantity do |state, cmd|
     return unless state.open? && state.items[cmd.payload.item_id]
 
-    event ItemQuantityUpdated, cmd.payload
+    event ItemQuantityUpdated, cmd.payldad
   end
 
   event ItemQuantityUpdated do |state, event|
@@ -166,5 +176,15 @@ class Order < Sourced::Actor
 
   event Placed do |state, event|
     state.status = :placed
+  end
+
+  command SetCustomerName do |state, cmd|
+    return unless state.placed?
+
+    event CustomerNameSet, cmd.payload
+  end
+
+  event CustomerNameSet do |state, event|
+    state.customer_name = event.payload.customer_name
   end
 end
