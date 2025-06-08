@@ -41,6 +41,8 @@ body {
   transition: background-color 0.2s ease;
 }
 
+.desktop-only { display: none; }
+
 .nav a:hover {
   background: #f0f8f0;
 }
@@ -331,6 +333,8 @@ h4 {
 
 /* Desktop styles */
 @media (min-width: 768px) {
+  .desktop-only { display: initial; }
+
   .card.full, .card.half {
     flex: 1 1 100%;
   }

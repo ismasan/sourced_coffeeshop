@@ -32,9 +32,9 @@ module Layouts
               a(href: '/barista', class: ('current' if current_page?('/barista'))) { 'Barista' }
             end
             div class: 'link-group' do
-              span { "logged in as #{helpers.current_user.username}" }
+              span(class: 'current-user desktop-only') { "logged in as #{helpers.current_user.username}" }
               a(class: 'logout', href: '/logout') { 'Logout' }
-              a(class: 'system', href: '/sourced') { '⚙' }
+              a(class: 'system desktop-only', href: '/sourced') { '⚙' }
             end
           end
 
