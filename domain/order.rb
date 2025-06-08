@@ -54,6 +54,9 @@ class Order < Sourced::Actor
   Cancel = Sourced::Command.define('orders.cancel')
   Canceled = Sourced::Event.define('orders.canceled')
 
+  Place = Sourced::Command.define('orders.place')
+  Placed = Sourced::Command.define('orders.placed')
+
   class State
     VAT = 0.135
 
@@ -153,5 +156,15 @@ class Order < Sourced::Actor
 
   event Canceled do |state, event|
     state.status = :canceled
+  end
+
+  command Place do |state, cmd|
+    return unless state.open?
+
+    event Placed, cmd.payload
+  end
+
+  event Placed do |state, event|
+    state.status = :placed
   end
 end

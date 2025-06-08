@@ -92,4 +92,8 @@ class OrderListings < Sourced::Projector::EventSourced
   event Order::Canceled do |listing, event|
     listing.status = 'canceled'
   end
+
+  event Order::Placed do |listing, event|
+    listing.status = 'placed'
+  end
 end
