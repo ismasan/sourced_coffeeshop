@@ -32,7 +32,7 @@ class OrderListings < Sourced::Projector::EventSourced
     attribute :status, Types::String.default('open'), writer: true
     attribute :seq, Types::Integer.default(0), writer: true
     attribute :members, Types::Array[String].default { [] }
-    attribute :created_at, Types::Forms::Time.nullable, writer: true
+    attribute :created_at, Types::Forms::Time, writer: true
     attribute :updated_at, Types::Forms::Time.nullable, writer: true
 
     def total
@@ -83,5 +83,9 @@ class OrderListings < Sourced::Projector::EventSourced
 
   event Order::ItemRemoved do |listing, event|
     listing.items.delete(event.payload.item_id)
+  end
+
+  event Order::ItemQuantityUpdated do |listing, event|
+    listing.items[event.payload.item_id][:quantity] = event.payload.quantity
   end
 end

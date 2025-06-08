@@ -41,6 +41,16 @@ class Order < Sourced::Actor
     attribute :item_id, String
   end
 
+  UpdateItemQuantity = Sourced::Command.define('orders.update_item_quantity') do
+    attribute :item_id, Types::String.present
+    attribute :quantity, Types::Lax::Integer
+  end
+
+  ItemQuantityUpdated = Sourced::Command.define('orders.item_quantity_updated') do
+    attribute :item_id, Types::String.present
+    attribute :quantity, Types::Lax::Integer
+  end
+
   class State
     VAT = 0.135
 
@@ -119,5 +129,16 @@ class Order < Sourced::Actor
 
   event ItemRemoved do |state, event|
     state.items.delete(event.payload.item_id)
+  end
+
+  command UpdateItemQuantity do |state, cmd|
+    return unless state.open? && state.items[cmd.payload.item_id]
+
+    event ItemQuantityUpdated, cmd.payload
+  end
+
+  event ItemQuantityUpdated do |state, event|
+    item = state.items[event.payload.item_id]
+    item.quantity = event.payload.quantity
   end
 end
