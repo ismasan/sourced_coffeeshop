@@ -13,18 +13,22 @@ module Pages
     def container
       div id: 'main' do
         div class: 'cards-container' do
-          Components::Card(size: 'two-thirds') do |c|
-            c.header('Products')
-            c.content do 
-              p { 'gello'}
-            end
-          end
-          Components::Card(size: 'one-third') do |c|
+          Components::Card(size: 'full') do |c|
             c.header do
               Components::StatusBadge(@order.status)
               h3 { @order.id }
             end
-            c.content { 'aaa' }
+            c.content do
+              ul do
+                li do
+                  strong { 'Total: ' }
+                  plain @order.total.to_s
+                end
+              end
+              if @order.open?
+                a(class: 'nice-button', data: _d.on.click.get(url("/orders/#{@order.id}/catalog")).to_h) { 'Add products'}
+              end
+            end
           end
         end
       end

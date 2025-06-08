@@ -81,6 +81,16 @@ class App < Sinatra::Base
     phlex Pages::OrderPage.new(order: order.state, layout: true)
   end
 
+  get '/orders/:id/catalog/?' do |id|
+    datastar.send(:stream_no_heartbeat) do |sse|
+      sse.merge_fragments Components::Modal.new(
+        title: 'Catalog',
+        content: Components::Catalog.new(products: Catalog.all)
+      )
+      sse.merge_signals modal: true
+    end
+  end
+
   post '/commands/start-order' do
     cmd = command_context.build(params[:command].to_h)
     raise "Invalid command #{cmd.inspect}" if !cmd.valid?
