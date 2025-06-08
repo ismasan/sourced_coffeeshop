@@ -574,7 +574,7 @@ tbody tr:last-child td {
 #modal > .modal-content {
 	/* Position visible dialog near the top of the window */
 	margin: 1rem;
-
+  width: calc(100% - 2rem);
 	/* Display properties for visible dialog*/
 	border:solid 1px #999;
 	border-radius:8px;
