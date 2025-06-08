@@ -21,6 +21,8 @@ class Order < Sourced::Actor
   end
 
   class State
+    VAT = 0.135
+
     Item = Struct.new(:product_id, :variant_id, :product_name, :variant_name, :price, :quantity, keyword_init: true) do
       def total = price * quantity
       def id = [product_id, variant_id].join('-')
@@ -46,12 +48,17 @@ class Order < Sourced::Actor
       @status = :new
     end
 
-    def total = items.values.sum(&:total)
+    def subtotal = items.values.sum(&:total)
+    def tax = subtotal * VAT
+    def total = subtotal + tax
 
     def open? = status == :open
 
     def add_item(**kargs)
       item = Item.build(**kargs)
+      if (it = @items[item.id])
+        item.quantity += it.quantity
+      end
       @items[item.id] = item
     end
   end

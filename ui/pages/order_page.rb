@@ -43,9 +43,13 @@ module Pages
               end
 
               ul(class: 'order-summary') do
+                li(class: 'order-summary--subtotal') do
+                  strong { 'Sub total: ' }
+                  span { @order.subtotal.to_s }
+                end
                 li(class: 'order-summary--tax') do
-                  strong { 'Tax: ' }
-                  span { '$2.00' }
+                  strong { 'VAT: ' }
+                  span { @order.tax.to_s }
                 end
                 li(class: 'order-summary--total') do
                   strong { 'Total: ' }

@@ -819,16 +819,6 @@ select:hover {
   padding-bottom: 12px;
 }
 
-.order-summary--tax strong {
-  color: #666666;
-  font-weight: 600;
-}
-
-.order-summary--tax span {
-  color: #666666;
-  font-weight: 500;
-}
-
 .order-summary--total {
   font-size: 18px;
   padding-top: 12px;
