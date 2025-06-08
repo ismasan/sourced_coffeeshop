@@ -19,6 +19,10 @@ class Order < Sourced::Actor
       @items = {}
       @status = :new
     end
+
+    def total = items.values.sum(&:total)
+
+    def open? = status == :open
   end
 
   state do |id|
