@@ -44,6 +44,13 @@ class App < Sinatra::Base
         puts err.backtrace.join("\n")
       end
     end
+
+    def open_modal(component)
+      datastar.send(:stream_no_heartbeat) do |sse|
+        sse.merge_fragments component
+        sse.merge_signals modal: true
+      end
+    end
   end
 
   get '/?' do
@@ -82,13 +89,10 @@ class App < Sinatra::Base
   end
 
   get '/orders/:id/catalog/?' do |id|
-    datastar.send(:stream_no_heartbeat) do |sse|
-      sse.merge_fragments Components::Catalog.new(
-        order_id: id, 
-        category: params[:cat]
-      )
-      sse.merge_signals modal: true
-    end
+    open_modal Components::Catalog.new(
+      order_id: id, 
+      category: params[:cat]
+    )
   end
 
   post '/commands/start-order' do
