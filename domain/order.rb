@@ -51,6 +51,9 @@ class Order < Sourced::Actor
     attribute :quantity, Types::Lax::Integer
   end
 
+  Cancel = Sourced::Command.define('orders.cancel')
+  Canceled = Sourced::Event.define('orders.canceled')
+
   class State
     VAT = 0.135
 
@@ -140,5 +143,15 @@ class Order < Sourced::Actor
   event ItemQuantityUpdated do |state, event|
     item = state.items[event.payload.item_id]
     item.quantity = event.payload.quantity
+  end
+
+  command Cancel do |state, cmd|
+    return unless state.open?
+
+    event Canceled
+  end
+
+  event Canceled do |state, event|
+    state.status = :canceled
   end
 end

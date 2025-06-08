@@ -88,4 +88,8 @@ class OrderListings < Sourced::Projector::EventSourced
   event Order::ItemQuantityUpdated do |listing, event|
     listing.items[event.payload.item_id][:quantity] = event.payload.quantity
   end
+
+  event Order::Canceled do |listing, event|
+    listing.status = 'canceled'
+  end
 end

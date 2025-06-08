@@ -26,6 +26,8 @@ module Pages
               order_actions
 
               order_summary
+
+              order_next_steps
             end
           end
         end
@@ -78,5 +80,14 @@ module Pages
       end
     end
 
+    def order_next_steps
+      div class: 'order-next-steps' do
+        if @order.open?
+          Sourced::UI::Components::Command(Order::Cancel, stream_id: @order.id, class: 'nice-form') do |form|
+            form.button(class: 'btn danger', type: 'submit') { 'Cancel order' }
+          end
+        end
+      end
+    end
   end
 end
