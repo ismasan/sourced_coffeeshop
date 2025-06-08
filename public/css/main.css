@@ -857,3 +857,20 @@ select:hover {
     margin-top: 4px;
   }
 }
+.item-details {
+  .item-header {
+    display: flex;
+    margin-bottom: 24px;
+
+    .item-names {
+      strong {
+        padding-right: 0.5rem;
+      }
+    }
+  }
+
+  .item-remove {
+    padding: 1rem 0;
+    text-align: right;
+  }
+}
