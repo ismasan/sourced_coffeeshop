@@ -644,3 +644,46 @@ tbody tr:last-child td {
 	0% {transform: scale(1);}
 	100% {transform: scale(0.9);}
 }
+
+/* Button Styles */
+.btn {
+  display: inline-block;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 80px;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn.danger {
+  background: #ff4444;
+  color: #ffffff;
+  border-color: #ff4444;
+}
+
+.btn.danger:hover {
+  background: #ff3333;
+  border-color: #ff3333;
+}
+
+.btn.danger:active {
+  background: #ee2222;
+}
