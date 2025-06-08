@@ -45,10 +45,19 @@ module Components
       div class: 'product-card' do
         h3(class: 'product-name') { product.name }
         div class: 'product-variants' do
-          product.variants.each do |variant_id, variant|
-            button(type: 'button', class: 'variant-button') do
-              span(class: 'variant-name') { variant.name }
-              span(class: 'variant-price') { "£#{(variant.price / 100.0).round(2)}" }
+          product.variants.values.each do |variant|
+            Sourced::UI::Components::Command(Order::AddItem, stream_id: @order_id, class: 'nice-form') do |form|
+              form.payload_fields(
+                product_id: product.id, 
+                variant_id: variant.id,
+                product_name: product.name,
+                variant_name: variant.name,
+                price: variant.price
+              )
+              form.button(type: 'submit', class: 'variant-button') do
+                span(class: 'variant-name') { variant.name }
+                span(class: 'variant-price') { "£#{(variant.price / 100.0).round(2)}" }
+              end
             end
           end
         end
