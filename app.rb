@@ -143,6 +143,14 @@ class App < Sinatra::Base
     )
   end
 
+  get '/orders/:id/items/:item_id/?' do |order_id, item_id|
+    order = Order.load(order_id)
+    open_modal Components::OrderItemModal.new(
+      order: order.state,
+      item_id:
+    )
+  end
+
   post '/commands/start-order' do
     cmd = command_context.build(params[:command].to_h)
     raise "Invalid command #{cmd.inspect}" if !cmd.valid?
