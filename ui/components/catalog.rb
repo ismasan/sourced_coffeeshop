@@ -54,7 +54,7 @@ module Components
                 variant_name: variant.name,
                 price: variant.price.cents
               )
-              form.button(type: 'submit', class: 'variant-button') do
+              form.button(type: 'submit', class: 'variant-button', data: _d.on.click.run('$modal = false').to_h) do
                 span(class: 'variant-name') { variant.name }
                 span(class: 'variant-price') { variant.price.format }
               end

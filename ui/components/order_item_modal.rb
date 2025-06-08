@@ -50,7 +50,7 @@ module Components
             div class: 'item-remove' do
               Sourced::UI::Components::Command(Order::RemoveItem, stream_id: @order.id, class: 'nice-form') do |form|
                 form.payload_fields(item_id: @item.id)
-                form.button(class: 'btn danger', type: 'submit') { 'x Remove' }
+                form.button(class: 'btn danger', type: 'submit', data: _d.on.click.run('$modal = false').to_h) { 'x Remove' }
               end
             end
           end
