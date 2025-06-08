@@ -3,6 +3,10 @@
 class OrderListings < Sourced::Projector::EventSourced
   DATA_DIR = './storage/orders'
 
+  module System
+    Updated = ::Sourced::Event.define('order_listings.system.updated')
+  end
+
   # This block runs in a transaction when handling events
   # Just write a JSON representation of these listings
   sync do |listing, _command, events|
@@ -16,6 +20,10 @@ class OrderListings < Sourced::Projector::EventSourced
     end
   end
 
+  sync do |list, _command, events|
+    Sourced.config.backend.pubsub.publish('system', events.last.follow(System::Updated))
+  end
+
   class Listing < Plumb::Types::Data
     attribute :id, String
     attribute :total, Types::Money.default { Money.zero }, writer: true
@@ -24,6 +32,10 @@ class OrderListings < Sourced::Projector::EventSourced
     attribute :members, Types::Array[String].default { [] }
     attribute :created_at, Types::Forms::Time.nullable, writer: true
     attribute :updated_at, Types::Forms::Time.nullable, writer: true
+
+    def to_h
+      super.merge(total: total.cents)
+    end
   end
 
   # Let's give this class a repository interface

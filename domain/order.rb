@@ -1,4 +1,17 @@
 class Order < Sourced::Actor
+  module System
+    Updated = ::Sourced::Event.define('orders.system.updated')
+  end
+
+  # This runs in the same transaction
+  # as commiting new events to the backend
+  # Here we publish an ephemeral event
+  # so that the UI can react to it
+  # In future, Sourced will have a special DSL for this
+  sync do |state, command, events|
+    Sourced.config.backend.pubsub.publish('system', command.follow(System::Updated))
+  end
+
   Start = Sourced::Command.define('orders.start')
   Started = Sourced::Event.define('orders.started')
 

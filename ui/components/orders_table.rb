@@ -6,7 +6,7 @@ module Components
 
     def view_template
 
-      table(class: 'orders-table') do 
+      table(id: 'orders-table', class: 'orders-table') do 
         thead do
           th { 'status' }
           th(class: 'cell--order-id') { 'Order ID' }

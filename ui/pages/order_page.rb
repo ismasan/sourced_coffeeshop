@@ -6,6 +6,8 @@ module Pages
       @order = order
     end
 
+    def page_id = @order.id
+
     private
 
     def title = "Order #{@order.id} - Sourced Coffee"

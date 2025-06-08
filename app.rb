@@ -53,6 +53,54 @@ class App < Sinatra::Base
     end
   end
 
+  get '/updates/?' do
+    # TODO: here we're listening on a channel
+    # shared by all clients
+    # In reality we should scope by the current session, or tenant, or user, or todo-list
+    # TODO: PG LISTEN allows subsribing to multiple channels
+    # ie pubsub.subscribe(['system'], ['tenant-1'])
+    # This could be beneficial
+    # TODO: the browswer can disconnect (by default Datastar disconnects when the browser tab is not active)
+    # Here we should re-render on reconnect, but NOT on page load.
+    channel = Sourced.config.backend.pubsub.subscribe('system')
+
+    datastar.on_connect do |*args|
+      # Here we should keep track of whether 
+      # this is an initial page load, or a reconnect.
+      # and re-render if the latter.
+      puts 'client connect'
+    end
+    datastar.on_client_disconnect do |*args|
+      puts 'client disconnect'
+      channel.stop
+    end
+    datastar.on_server_disconnect do |*args|
+      puts 'server disconnect'
+      channel.stop
+    end
+    datastar.on_error do |ex|
+      puts "ERROR #{ex}"
+      channel.stop
+    end
+
+    datastar.stream do |sse|
+      channel.start do |evt, channel|
+        case evt
+        when Order::System::Updated
+          if sse.signals['page_key'] == 'Pages::OrderPage' && sse.signals['page_id'] == evt.stream_id
+            order = Order.load(evt.stream_id)
+            sse.merge_fragments Pages::OrderPage.new(order: order.state)
+          end
+        when OrderListings::System::Updated
+          if %w[Pages::HomePage Pages::CashierPage].include?(sse.signals['page_key'])
+            sse.merge_fragments Components::OrdersTable.new(orders: OrderListings.all)
+          end
+        else
+          puts "Unknown event: #{evt}"
+        end
+      end
+    end
+  end
   get '/?' do
     if logged_in?
       phlex Pages::HomePage.new(layout: true)
@@ -114,4 +162,12 @@ class App < Sinatra::Base
       halt 204
     end
   end
+end
+
+
+trap('INT') do
+  puts('Closing!')
+  sleep 1
+  puts('Byebye!')
+  exit
 end
