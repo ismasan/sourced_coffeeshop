@@ -93,6 +93,11 @@ class App < Sinatra::Base
           end
         when OrderListings::System::Updated
           if %w[Pages::HomePage Pages::CashierPage].include?(sse.signals['page_key'])
+            # TODO: Writing listings and emitting event in same TX
+            # seems to be breaking OrderListings.all
+            # It load the new file but omits the "created_at" field for some reason
+            # This sleep fixes it (??)
+            sleep 0.1
             sse.merge_fragments Components::OrdersTable.new(orders: OrderListings.all)
           end
         else
