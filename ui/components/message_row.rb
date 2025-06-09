@@ -29,7 +29,7 @@ module Components
           span(class: 'event-author') { event.metadata[:username].to_s }
         end
         if event.payload
-          div(class: 'event-payload', data: { show: '$_showPayloads' }) do
+          div(id: dom_id('payload'), class: 'event-payload', data: { show: '$_showPayloads' }) do
             JSON.pretty_generate(event.payload&.to_h || {})
           end
         end

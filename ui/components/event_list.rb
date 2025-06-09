@@ -32,7 +32,10 @@ module Components
 
               div(class: 'switches') do
                 label(class: 'toggle-payloads') do
-                  input(type: 'checkbox', id: 'show-payloads', data: _d.on.change.run('$_showPayloads = !$_showPayloads').to_h)
+                  data = _d.on.change.run('$_showPayloads = !$_showPayloads').to_h.merge(
+                    'attr-checked' => '$_showPayloads',
+                  )
+                  input(type: 'checkbox', id: dom_id('payload-toggle'), data:)
                   span { 'show payloads' }
                 end
               end
