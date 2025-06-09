@@ -55,13 +55,13 @@ class Order < Sourced::Actor
   Canceled = Sourced::Event.define('orders.canceled')
 
   Place = Sourced::Command.define('orders.place')
-  Placed = Sourced::Command.define('orders.placed')
+  Placed = Sourced::Event.define('orders.placed')
 
   SetCustomerName = Sourced::Command.define('orders.set_customer_name') do
     attribute :customer_name, Types::String.present
   end
 
-  CustomerNameSet = Sourced::Command.define('orders.customer_name_set') do
+  CustomerNameSet = Sourced::Event.define('orders.customer_name_set') do
     attribute :customer_name, String
   end
 
@@ -86,13 +86,15 @@ class Order < Sourced::Actor
     end
 
     attr_reader :id, :items
-    attr_accessor :status, :customer_name
+    attr_accessor :status, :customer_name, :created_at, :created_by
 
     def initialize(id)
       @id = id
       @items = {}
       @status = :new
       @customer_name = nil
+      @created_at = nil
+      @created_by = nil
     end
 
     def subtotal = items.values.sum(Money.zero, &:total)
@@ -130,6 +132,8 @@ class Order < Sourced::Actor
 
   event Started do |state, event|
     state.status = :open
+    state.created_at = event.created_at
+    state.created_by = event.metadata[:username]
   end
 
   command AddItem do |state, cmd|
