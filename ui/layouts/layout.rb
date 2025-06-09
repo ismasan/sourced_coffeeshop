@@ -33,8 +33,8 @@ module Layouts
             end
             div class: 'link-group' do
               span(class: 'current-user desktop-only') { "logged in as #{helpers.current_user.username}" }
-              a(class: 'logout', href: '/logout') { 'Logout' }
-              a(class: 'system desktop-only', href: '/sourced') { '⚙' }
+              a(class: 'logout', title: 'Logout', href: '/logout') { 'logout' }
+              a(class: 'system desktop-only', title: 'Sourced dashboard', href: '/sourced') { '🛠' }
             end
           end
 

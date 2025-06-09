@@ -6,26 +6,57 @@ module Components
 
     def initialize(size: FULL_WIDTH)
       @size = size
+      @header = nil
+      @tools = nil
+      @content = nil
     end
 
     def view_template(&block)
+      yield self
+
       div(class: ['card', @size]) do
-        yield self
+        if @header || @tools
+          div(class: 'card-header') do
+            div(class: 'card-header-title', &@header) if @header
+            div(class: 'card-header-tools desktop-only', &@tools) if @tools
+          end
+        end
+        div(class: 'card-content', &@content) if @content
       end
     end
 
     def header(title = nil, &block)
-      if title
-        div(class: 'card-header') do
+      @header = if title
+        proc do
           h3 { title }
         end
       else
-        div(class: 'card-header', &block)
+        block
       end
+
+      self
     end
 
-    def content(&block)
-      div(class: 'card-content', &block)
+    def tools(comp = nil, &block)
+      @tools = if comp
+        proc do
+          h3 { render comp }
+        end
+      else
+        block
+      end
+
+      self
+    end
+
+    def content(comp = nil, &block)
+      @content = if comp
+         proc { render comp }
+      else
+        block
+      end
+
+      self
     end
   end
 end

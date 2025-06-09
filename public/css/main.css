@@ -33,7 +33,7 @@ body {
 .link-group {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 0.5em
 }
 
 .nav a {
@@ -262,16 +262,6 @@ h4 {
     padding: 18px;
   }
 
-  .nav {
-    padding: 12px 16px;
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .link-group {
-    justify-content: center;
-  }
-  
   #main {
     padding: 16px;
   }
@@ -333,13 +323,28 @@ h4 {
   .status-badge {
     display: inline;
   }
-}
 
-.card-header h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333333;
-  margin: 0;
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333333;
+    margin: 0;
+  }
+
+  .card-header-title {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex: 2;
+  }
+
+  .card-header-tools {
+    flex: 1;
+    text-align: right;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
 }
 
 .card-content {
@@ -458,7 +463,7 @@ tbody tr:last-child td {
   display: inline-block;
   padding: 0.25em 0.6em;
   color: #fff;
-  background: #e2e8f0;
+  background: #afb6bf;
   border-radius: 0.25em;
 }
 
@@ -836,6 +841,9 @@ select:hover {
 }
 
 /* Order Summary Styles */
+.order-details {
+  margin-bottom: 1em;
+}
 .order-summary {
   list-style: none;
   padding: 0;
@@ -882,32 +890,15 @@ select:hover {
   text-align: right;
 }
 
-.order-next-steps {
+.control-row {
   display: flex;
   gap: 16px;
+
   form {
     flex: 1;
     button[type="submit"] {
       width: 100%;
     }
-  }
-}
-/* Mobile responsive adjustments */
-@media (max-width: 480px) {
-  .order-item h4 {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
-  
-  .item-quantity {
-    margin-left: 0;
-    margin-top: 4px;
-  }
-  
-  .item-total {
-    margin-left: 0;
-    margin-top: 4px;
   }
 }
 .item-details {
@@ -961,10 +952,7 @@ select:hover {
 }
 
 .order-customer-name--edit {
-  a {
-    display: inline-block;
-    margin-left: 8px;
-  }
+  font-size: 2em;
 }
 
 .errors {

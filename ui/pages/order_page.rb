@@ -23,16 +23,31 @@ module Pages
               Components::StatusBadge(@order.status)
               h3 { @order.id }
             end
+
+            c.tools do
+              if !@interactive
+                Components::StatusBadge('auditing')
+              end
+            end
+
             c.content do
+              div class: 'order-details' do
+                if @order.created_at
+                  small do
+                    "created at #{@order.created_at.strftime('%Y-%m-%d %H:%M:%S')} by #{@order.created_by}"
+                  end
+                end
+              end
+
               order_items
 
               order_actions
 
               order_summary
-
-              order_next_steps
             end
           end
+
+          order_next_steps
         end
       end
 
@@ -47,7 +62,11 @@ module Pages
     def order_items
       div class: 'order-items' do
         @order.items.values.each do |item|
-          data = _d.on.click.get(url("/orders/#{@order.id}/items/#{item.id}")).to_h
+          data = if @interactive && @order.open?
+            _d.on.click.get(url("/orders/#{@order.id}/items/#{item.id}")).to_h
+          else
+            {}
+          end
 
           div class: 'order-item', id: item.id, data: do
             h4 do
@@ -93,32 +112,50 @@ module Pages
     end
 
     def order_next_steps
-      return unless @interactive
+      if @interactive && @order.open?
+        Components::Card(size: 'full') do |c|
+          c.content do
+            div class: 'control-row' do
+              Sourced::UI::Components::Command(Order::Cancel, stream_id: @order.id, class: 'nice-form') do |form|
+                form.button(class: 'btn danger', type: 'submit') { 'Cancel order' }
+              end
 
-      if @order.placed?
-        div class: 'order-customer-name', data: _d.signals(_cnamedit: false).to_h do
-          Sourced::UI::Components::Command(Order::SetCustomerName, stream_id: @order.id, class: 'nice-form') do |form|
-            div class: 'input-row', data: { show: '$_cnamedit' } do
-              form.text_field(:customer_name, value: @order.customer_name, placeholder: 'Customer name')
-              form.button(class: 'btn primary', type: 'submit') { 'Update' }
-            end
-            p class: 'order-customer-name--edit', data: { show: '!$_cnamedit' } do
-              span { 'customer: ' }
-              strong { @order.customer_name || '--' }
-              a(href: '#', data: _d.on.click.run('$_cnamedit = true').to_h) { 'edit' }
+              Sourced::UI::Components::Command(Order::Place, stream_id: @order.id, class: 'nice-form') do |form|
+                form.button(class: 'btn primary', type: 'submit') { 'Place order' }
+              end
             end
           end
         end
       end
 
-      div class: 'order-next-steps' do
-        if @order.open?
-          Sourced::UI::Components::Command(Order::Cancel, stream_id: @order.id, class: 'nice-form') do |form|
-            form.button(class: 'btn danger', type: 'submit') { 'Cancel order' }
+      if @order.placed?
+        Components::Card(size: 'full') do |c|
+          c.header do
+            h3 { 'Customer name' }
           end
 
-          Sourced::UI::Components::Command(Order::Place, stream_id: @order.id, class: 'nice-form') do |form|
-            form.button(class: 'btn primary', type: 'submit') { 'Place order' }
+          c.tools do
+            signals = _d.signals(_cnamedit: false).to_h
+            data_change = _d.on.click.run('$_cnamedit = !$_cnamedit').to_h.merge('text' => '$_cnamedit ? "cancel" : "edit"')
+            span(data: signals)
+            if @interactive
+              a(class: 'btn primary', data: data_change) { 'edit' }
+            end
+          end
+
+          c.content do
+            if @interactive
+              Sourced::UI::Components::Command(Order::SetCustomerName, stream_id: @order.id, class: 'nice-form') do |form|
+                div class: 'input-row', data: { show: '$_cnamedit' } do
+                  form.text_field(:customer_name, value: @order.customer_name, placeholder: 'Customer name')
+                  form.button(class: 'btn primary', type: 'submit') { 'Update' }
+                end
+              end
+            end
+
+            strong class: 'order-customer-name--edit', data: { show: '!$_cnamedit' } do
+              @order.customer_name || '--'
+            end
           end
         end
       end
