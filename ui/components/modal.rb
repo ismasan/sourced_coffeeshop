@@ -34,8 +34,13 @@ module Components
       end
     end
 
-    def content(&block)
-      @content = block
+    def content(comp = nil, &block)
+      @content = if comp
+         proc { render comp }
+      else
+        block
+      end
+
       self
     end
 

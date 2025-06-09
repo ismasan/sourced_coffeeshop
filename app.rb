@@ -196,6 +196,14 @@ class App < Sinatra::Base
     end
   end
 
+  get '/events/:id/correlation/?' do |id|
+    events = Sourced.config.backend.read_correlation_batch(id)
+    open_modal Components::EventTree::Modal.new(
+      events:,
+      highlighted: id
+    )
+  end
+
   post '/commands/start-order' do
     cmd = command_context.build(params[:command].to_h)
     raise "Invalid command #{cmd.inspect}" if !cmd.valid?

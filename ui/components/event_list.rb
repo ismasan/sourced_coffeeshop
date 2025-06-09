@@ -12,13 +12,12 @@ module Components
     def view_template
       div id: 'event-list', data: _d.signals(_showPayloads: false).to_h do
         div class: 'header' do
-          h2 { 'History' }
           if @events.any?
-
             disabled_back = @first_seq == @seq
             disabled_forward = @last_seq == @seq
 
             div(class: 'history-tools') do
+              h2 { 'History' }
               span(class: 'pagination') do
                 button(disabled: disabled_back,
                   data: _d.on.click.get("/#{@href_prefix}/#{@events.first.stream_id}/#{@seq - 1}").to_h) do
@@ -28,12 +27,13 @@ module Components
                   data: _d.on.click.get("/#{@href_prefix}/#{@events.first.stream_id}/#{@seq + 1}").to_h) do
                   safe('&rarr;')
                 end
-                small { "sequence: #{@seq} " }
+                span { "sequence: #{@seq} " }
               end
 
               div(class: 'switches') do
-                button(class: 'toggle-payloads', data: _d.on.click.run('$_showPayloads = !$_showPayloads').to_h) do
-                  span(data: { text: '$_showPayloads ? "Hide Payloads" : "Show Payloads"' })
+                label(class: 'toggle-payloads') do
+                  input(type: 'checkbox', id: 'show-payloads', data: _d.on.change.run('$_showPayloads = !$_showPayloads').to_h)
+                  span { 'show payloads' }
                 end
               end
             end
