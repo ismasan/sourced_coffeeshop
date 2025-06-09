@@ -5,7 +5,8 @@ module Pages
       super(layout:)
       @order = order
       @events = events
-      @seq = seq
+      @seq = seq || events.last&.seq || 0
+      @interactive = events.last&.seq == @seq
     end
 
     def page_id = @order.id
@@ -82,6 +83,8 @@ module Pages
     end
 
     def order_actions
+      return unless @interactive
+
       div class: 'order-actions' do
         if @order.open?
           a(class: 'btn primary', data: _d.on.click.get(url("/orders/#{@order.id}/catalog")).to_h) { '+ products'}
@@ -90,6 +93,8 @@ module Pages
     end
 
     def order_next_steps
+      return unless @interactive
+
       if @order.placed?
         div class: 'order-customer-name', data: _d.signals(_cnamedit: false).to_h do
           Sourced::UI::Components::Command(Order::SetCustomerName, stream_id: @order.id, class: 'nice-form') do |form|
