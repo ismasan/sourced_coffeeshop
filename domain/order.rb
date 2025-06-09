@@ -150,7 +150,7 @@ class Order < Sourced::Actor
   command UpdateItemQuantity do |state, cmd|
     return unless state.open? && state.items[cmd.payload.item_id]
 
-    event ItemQuantityUpdated, cmd.payldad
+    event ItemQuantityUpdated, cmd.payload
   end
 
   event ItemQuantityUpdated do |state, event|
