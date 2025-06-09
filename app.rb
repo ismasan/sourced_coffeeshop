@@ -89,7 +89,10 @@ class App < Sinatra::Base
         when Order::System::Updated
           if sse.signals['page_key'] == 'Pages::OrderPage' && sse.signals['page_id'] == evt.stream_id
             order = Order.load(evt.stream_id)
-            sse.merge_fragments Pages::OrderPage.new(order: order.state)
+            sse.merge_fragments Pages::OrderPage.new(
+              order: order.state,
+              events: order.history
+            )
           end
         when OrderListings::System::Updated
           if %w[Pages::HomePage Pages::CashierPage].include?(sse.signals['page_key'])
@@ -106,6 +109,7 @@ class App < Sinatra::Base
       end
     end
   end
+
   get '/?' do
     if logged_in?
       phlex Pages::HomePage.new(layout: true)
@@ -136,9 +140,17 @@ class App < Sinatra::Base
     phlex Pages::CashierPage.new(layout: true)
   end
 
+  get '/barista' do
+    phlex Pages::BaristaPage.new(layout: true)
+  end
+
   get '/orders/:id/?' do |id|
     order = Order.load(id)
-    phlex Pages::OrderPage.new(order: order.state, layout: true)
+    phlex Pages::OrderPage.new(
+      order: order.state, 
+      events: order.history,
+      layout: true
+    )
   end
 
   get '/orders/:id/catalog/?' do |id|
@@ -154,6 +166,34 @@ class App < Sinatra::Base
       order: order.state,
       item_id:
     )
+  end
+
+  # Load a todo list up to a given sequence number
+  # Ex. /todo-lists/important-things/34
+  get '/orders/:id/:upto?' do |id, upto|
+    upto = Types::Lax::Integer.parse(upto)
+    order = Order.load(id, upto:)
+    # If this is an SSE request, stream the view back to to the browser
+    # If a normal page load, render normally with layout
+    if datastar.sse?
+      datastar.stream do |sse|
+        sse.execute_script <<-JS
+          history.replaceState({}, '', '/orders/#{order.id}/#{upto}')
+        JS
+        sse.merge_fragments Pages::OrderPage.new(
+          order: order.state,
+          events: order.history,
+          seq: upto,
+        )
+      end
+    else
+      phlex Pages::OrderPage.new(
+        order: order.state, 
+        events: order.history,
+        seq: upto,
+        layout: true
+      )
+    end
   end
 
   post '/commands/start-order' do

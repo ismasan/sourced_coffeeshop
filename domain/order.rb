@@ -117,6 +117,11 @@ class Order < Sourced::Actor
     State.new(id)
   end
 
+  # All events, not up to
+  def history
+    events(upto: nil)
+  end
+
   command Start do |state, cmd|
     raise ArgumentError, 'Order already started' if state.status != :new
 

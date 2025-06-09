@@ -1,9 +1,11 @@
 module Pages
   class OrderPage < Pages::Page
 
-    def initialize(order:, layout: false)
+    def initialize(order:, events: [], seq: nil, layout: false)
       super(layout:)
       @order = order
+      @events = events
+      @seq = seq
     end
 
     def page_id = @order.id
@@ -13,7 +15,7 @@ module Pages
     def title = "#{@order.status} #{@order.id} - Sourced Coffee"
 
     def container
-      div id: 'main' do
+      div id: 'main', class: 'with-sidebar' do
         div class: 'cards-container' do
           Components::Card(size: 'full') do |c|
             c.header do
@@ -31,6 +33,13 @@ module Pages
             end
           end
         end
+      end
+
+      div id: 'sidebar' do
+        Components::EventList(
+          events: @events,
+          seq: @seq,
+        )
       end
     end
 
