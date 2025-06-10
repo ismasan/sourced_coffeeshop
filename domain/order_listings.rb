@@ -101,6 +101,10 @@ class OrderListings < Sourced::Projector::EventSourced
     listing.status = 'placed'
   end
 
+  event Order::OrderFulfilled do |listing, event|
+    listing.status = 'fulfilled'
+  end
+
   event Order::ItemFulfillmentStarted do |listing, event|
     listing.items[event.payload.item_id][:status] = 'started'
   end
