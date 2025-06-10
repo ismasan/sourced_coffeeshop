@@ -744,6 +744,15 @@ tbody tr:last-child td {
   background: #45a049;
 }
 
+.btn.pending {
+  background: orange;
+  color: #ffffff;
+  transition: background-color 0.2s ease;
+}
+.btn.pending:hover {
+  background: rgb(250, 188, 74);
+}
+
 /* Select Styles */
 select {
   appearance: none;
@@ -782,7 +791,20 @@ select:hover {
   display: flex;
 }
 
-.order-item:hover {
+.icon {
+  display: inline-block;
+  font-size: 24px;
+}
+.icon.icon-tick {
+  color: #4CAF50;
+}
+.order-item.started {
+  border-color: orange;
+}
+.order-item.fulfilled {
+  border-color: #4CAF50;
+}
+.order-item[data-on-click]:hover {
   background: #f0f2f5;
   border-color: #d0d0d0;
   cursor: pointer;
@@ -817,7 +839,6 @@ select:hover {
 }
 
 .item-quantity {
-  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -828,6 +849,7 @@ select:hover {
 .item-tools {
   flex: 1;
   display: flex;
+  justify-content: flex-end;
 }
 
 .item-quantity .quantity {
@@ -850,6 +872,9 @@ select:hover {
 /* Order Summary Styles */
 .order-details {
   margin-bottom: 1em;
+  display: flex;
+  gap: 1em;
+  align-items: center;
 }
 .order-summary {
   list-style: none;
@@ -1189,5 +1214,26 @@ select:hover {
 @keyframes fadeIn {
   from { opacity: 0; max-height: 0; }
   to { opacity: 1; max-height: 500px; }
+}
+
+/* order fulfillment */
+.fulfillment-progress {
+  display: flex;
+  gap: 4px;
+
+  span {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-color: #e0e0e0;
+  }
+
+  span.started {
+    background-color: orange;
+  }
+
+  span.fulfilled {
+    background-color: #4CAF50;
+  }
 }
 

@@ -93,15 +93,17 @@ class App < Sinatra::Base
               order: order.state,
               events: order.history
             )
+          elsif sse.signals['page_key'] == 'Pages::FulfillmentPage' && sse.signals['page_id'] == evt.stream_id
+            order = Order.load(evt.stream_id)
+            sse.merge_fragments Pages::FulfillmentPage.new(
+              order: order.state,
+            )
           end
         when OrderListings::System::Updated
           if %w[Pages::HomePage Pages::CashierPage].include?(sse.signals['page_key'])
-            # TODO: Writing listings and emitting event in same TX
-            # seems to be breaking OrderListings.all
-            # It load the new file but omits the "created_at" field for some reason
-            # This sleep fixes it (??)
-            sleep 0.1
             sse.merge_fragments Components::OrdersTable.new(orders: OrderListings.all)
+          elsif %w[Pages::HomePage Pages::BaristaPage].include?(sse.signals['page_key'])
+            sse.merge_fragments Components::FulfillmentTable.new(orders: OrderListings.placed)
           end
         else
           puts "Unknown event: #{evt}"
@@ -147,6 +149,17 @@ class App < Sinatra::Base
   get '/orders/:id/?' do |id|
     order = Order.load(id)
     phlex Pages::OrderPage.new(
+      order: order.state, 
+      events: order.history,
+      layout: true
+    )
+  end
+
+  get '/orders/:id/fulfillment/?' do |id|
+    order = Order.load(id)
+    raise "order is not placed" if !order.state.placed?
+
+    phlex Pages::FulfillmentPage.new(
       order: order.state, 
       events: order.history,
       layout: true

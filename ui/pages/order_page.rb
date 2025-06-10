@@ -37,6 +37,10 @@ module Pages
                     "created at #{@order.created_at.strftime('%Y-%m-%d %H:%M:%S')} by #{@order.created_by}"
                   end
                 end
+
+                if @order.placed?
+                  a(href: url("/orders/#{@order.id}/fulfillment")) { 'fulfillment' }
+                end
               end
 
               order_items
@@ -68,7 +72,7 @@ module Pages
             {}
           end
 
-          div class: 'order-item', id: item.id, data: do
+          div class: ['order-item', item.status], id: item.id, data: do
             h4 do
               strong { item.product_name }
               span(class: 'item-variant') { item.variant_name }
