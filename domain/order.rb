@@ -65,22 +65,52 @@ class Order < Sourced::Actor
     attribute :customer_name, String
   end
 
+  # Item fulfillment
+  StartItemFulfillment = Sourced::Command.define('orders.start_item_fulfillment') do
+    attribute :item_id, Types::String.present
+  end
+
+  ItemFulfillmentStarted = Sourced::Event.define('orders.item_fulfillment_started') do
+    attribute :item_id, String
+  end
+
+  FulfillItem = Sourced::Command.define('orders.fulfill_item') do
+    attribute :item_id, Types::String.present
+  end
+
+  ItemFulfilled = Sourced::Event.define('orders.item_fulfilled') do
+    attribute :item_id, String
+  end
+
   class State
     VAT = 0.135
 
-    Item = Struct.new(:product_id, :variant_id, :product_name, :variant_name, :price, :quantity, keyword_init: true) do
+    Item = Struct.new(:product_id, :variant_id, :product_name, :variant_name, :price, :quantity, :status, keyword_init: true) do
       def total = price * quantity
       def id = [product_id, variant_id].join('-')
       def full_name = [product_name, variant_name].join(' - ')
 
-      def self.build(product_id:, variant_id:, product_name:, variant_name:, quantity: 1, price: 0)
+      def pending? = status == :pending
+      def started? = status == :started
+      def fulfilled? = status == :fulfilled
+
+      def start!
+        self.status = :started
+      end
+
+      def fulfill!
+        self.status = :fulfilled
+      end
+
+      def self.build(product_id:, variant_id:, product_name:, variant_name:, quantity: 1, price: 0, status: :pending)
         new(
-          product_id: product_id,
-          variant_id: variant_id,
-          product_name: product_name,
-          variant_name: variant_name,
-          quantity: quantity,
-          price: price
+          product_id:,
+          variant_id:,
+          product_name:,
+          variant_name:,
+          quantity:,
+          price:,
+          status:,
         )
       end
     end
@@ -195,5 +225,29 @@ class Order < Sourced::Actor
 
   event CustomerNameSet do |state, event|
     state.customer_name = event.payload.customer_name
+  end
+
+  command StartItemFulfillment do |state, cmd|
+    item = state.items[cmd.payload.item_id]
+    return unless item && item.pending?
+
+    event ItemFulfillmentStarted, cmd.payload
+  end
+
+  event ItemFulfillmentStarted do |state, event|
+    item = state.items[event.payload.item_id]
+    item.start!
+  end
+
+  command FulfillItem do |state, cmd|
+    item = state.items[cmd.payload.item_id]
+    return unless item && item.started?
+
+    event ItemFulfilled, cmd.payload
+  end
+
+  event ItemFulfilled do |state, event|
+    item = state.items[event.payload.item_id]
+    item.fulfill!
   end
 end
