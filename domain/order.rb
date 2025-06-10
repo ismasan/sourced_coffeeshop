@@ -82,6 +82,9 @@ class Order < Sourced::Actor
     attribute :item_id, String
   end
 
+  FulfillOrder = Sourced::Command.define('orders.fulfill_order')
+  OrderFulfilled = Sourced::Event.define('orders.order_fulfilled')
+
   class State
     VAT = 0.135
 
@@ -249,5 +252,21 @@ class Order < Sourced::Actor
   event ItemFulfilled do |state, event|
     item = state.items[event.payload.item_id]
     item.fulfill!
+  end
+
+  reaction ItemFulfilled do |state, event|
+    if state.items.values.all?(&:fulfilled?)
+      stream_for(event).command FulfillOrder
+    end
+  end
+
+  command FulfillOrder do |state, cmd|
+    if state.items.values.all?(&:fulfilled?)
+      event OrderFulfilled
+    end
+  end
+
+  event OrderFulfilled do |state, event|
+    state.status = :fulfilled
   end
 end
