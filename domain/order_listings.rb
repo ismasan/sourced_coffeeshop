@@ -53,6 +53,10 @@ class OrderListings < Sourced::Projector::EventSourced
     limit ? list.take(limit) : list
   end
 
+  def self.placed
+    all.select { |listing| listing.status == 'placed' }
+  end
+
   state do |id|
     Listing.new(id:)
   end
@@ -95,5 +99,13 @@ class OrderListings < Sourced::Projector::EventSourced
 
   event Order::Placed do |listing, event|
     listing.status = 'placed'
+  end
+
+  event Order::ItemFulfillmentStarted do |listing, event|
+    listing.items[event.payload.item_id][:status] = 'started'
+  end
+
+  event Order::ItemFulfilled do |listing, event|
+    listing.items[event.payload.item_id][:status] = 'fulfilled'
   end
 end
