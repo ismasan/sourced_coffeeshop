@@ -72,6 +72,9 @@ module Pages
             h4 do
               strong { item.product_name }
               span(class: 'item-variant') { item.variant_name }
+            end
+
+            div class: 'item-tools' do
               span(class: 'item-quantity') do
                 span(class: 'quantity') { item.quantity.to_s }
                 plain 'x'

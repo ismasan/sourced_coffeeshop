@@ -779,6 +779,7 @@ select:hover {
   padding: 16px;
   margin-bottom: 12px;
   transition: all 0.2s ease;
+  display: flex;
 }
 
 .order-item:hover {
@@ -792,6 +793,7 @@ select:hover {
 }
 
 .order-item h4 {
+  flex: 1;
   margin: 0;
   display: flex;
   flex-wrap: wrap;
@@ -821,6 +823,11 @@ select:hover {
   gap: 4px;
   font-size: 14px;
   color: #555555;
+}
+
+.item-tools {
+  flex: 1;
+  display: flex;
 }
 
 .item-quantity .quantity {
