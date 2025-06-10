@@ -19,9 +19,27 @@ module Pages
           end
 
           Components::Card(size: 'half') do |c|
-            c.header 'Workload'
+            c.header 'Payments'
             c.content do
-              img src: '/images/simple_order_throughput_chart.svg', alt: 'Workload Chart', class: 'workload-chart'
+              table(id: 'payments-table', class: 'orders-table') do 
+                thead do
+                  th { 'status' }
+                  th(class: 'cell--order-id') { 'Order ID' }
+                  th(class: 'cell--datetime') { 'created at' }
+                  th { 'amount' }
+                end
+
+                PaymentListings.all.each do |payment|
+                  tr do
+                    td do
+                      Components::StatusBadge(payment[:status])
+                    end
+                    td { a(href: url("/orders/#{payment[:order_id]}")) { payment[:order_id] } }
+                    td { payment[:created_at] }
+                    td(class: 'money') { Money.from_cents(payment[:amount]).format }
+                  end
+                end
+              end
             end
           end
         end

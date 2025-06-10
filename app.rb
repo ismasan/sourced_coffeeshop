@@ -105,6 +105,10 @@ class App < Sinatra::Base
           elsif %w[Pages::HomePage Pages::BaristaPage].include?(sse.signals['page_key'])
             sse.merge_fragments Components::FulfillmentTable.new(orders: OrderListings.placed)
           end
+        when PaymentListings::System::Updated
+          if sse.signals['page_key'] == 'Pages::HomePage'
+            sse.merge_fragments Pages::HomePage.new
+          end
         else
           puts "Unknown event: #{evt}"
         end
