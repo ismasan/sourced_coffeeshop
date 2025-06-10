@@ -85,6 +85,16 @@ class Order < Sourced::Actor
   FulfillOrder = Sourced::Command.define('orders.fulfill_order')
   OrderFulfilled = Sourced::Event.define('orders.order_fulfilled')
 
+  StartPayment = Sourced::Command.define('orders.start_payment')
+  PaymentStarted = Sourced::Event.define('orders.payment_started') do
+    attribute :payment_id, Types::String
+  end
+
+  ConfirmPayment = Sourced::Command.define('orders.confirm_payment') do
+    attribute :payment_id, Types::String
+  end
+  PaymentConfirmed = Sourced::Event.define('orders.payment_confirmed')
+
   class State
     VAT = 0.135
 
@@ -118,7 +128,13 @@ class Order < Sourced::Actor
       end
     end
 
-    attr_reader :id, :items
+    Payment = Struct.new(:id, :status) do
+      def pending? = status == :pending
+      def started? = status == :started
+      def confirmed? = status == :confirmed
+    end
+
+    attr_reader :id, :items, :payment
     attr_accessor :status, :customer_name, :created_at, :created_by
 
     def initialize(id)
@@ -128,6 +144,7 @@ class Order < Sourced::Actor
       @customer_name = nil
       @created_at = nil
       @created_by = nil
+      @payment = Payment.new(nil, :pending)
     end
 
     def subtotal = items.values.sum(Money.zero, &:total)
@@ -268,5 +285,26 @@ class Order < Sourced::Actor
 
   event OrderFulfilled do |state, event|
     state.status = :fulfilled
+  end
+
+  command StartPayment do |state, cmd|
+    return if state.open? || state.payment.status != :pending
+
+    event PaymentStarted, payment_id: ['payment', state.id].join('-')
+  end
+
+  event PaymentStarted do |state, event|
+    state.payment.status = :started
+    state.payment.id = event.payload.payment_id
+  end
+
+  command ConfirmPayment do |state, cmd|
+    return unless state.payment.status == :started
+
+    event PaymentConfirmed
+  end
+
+  event PaymentConfirmed do |state, event|
+    state.payment.status = :confirmed
   end
 end

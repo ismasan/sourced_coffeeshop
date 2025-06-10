@@ -13,7 +13,7 @@ module Pages
 
     private
 
-    def title = "#Fulfillment #{@order.id} - Sourced Coffee"
+    def title = "Fulfillment #{@order.id} - Sourced Coffee"
 
     def container
       div id: 'main', class: 'with-sidebar' do

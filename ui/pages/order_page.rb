@@ -119,7 +119,9 @@ module Pages
     end
 
     def order_next_steps
-      if @interactive && @order.open?
+      return unless @interactive
+
+      if @order.open?
         Components::Card(size: 'full') do |c|
           c.content do
             div class: 'control-row' do
@@ -129,6 +131,29 @@ module Pages
 
               Sourced::UI::Components::Command(Order::Place, stream_id: @order.id, class: 'nice-form') do |form|
                 form.button(class: 'btn primary', type: 'submit') { 'Place order' }
+              end
+            end
+          end
+        end
+      end
+
+      Components::Card(size: 'full') do |c|
+        c.header do
+          Components::StatusBadge(@order.payment.status)
+          h3 { 'Payment' }
+        end
+
+        c.content do
+          if !@order.open? && @order.payment.pending?
+            Sourced::UI::Components::Command(Order::StartPayment, stream_id: @order.id, class: 'nice-form') do |form|
+              form.button(class: 'btn primary btn-full', type: 'submit') { '£ start payment' }
+            end
+          end
+          if @order.payment.started?
+            Sourced::UI::Components::Command(Payment::Start, stream_id: @order.payment.id, class: 'nice-form') do |form|
+              form.payload_fields(order_id: @order.id, amount: @order.total.cents)
+              form.button(type: 'submit', class: 'contactless') do
+                img src: '/images/contactless-icon.svg', alt: 'Payment started', class: 'payment-started'
               end
             end
           end

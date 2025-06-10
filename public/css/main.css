@@ -476,6 +476,9 @@ tbody tr:last-child td {
 .status-badge.placed {
   background: orange;
 }
+.status-badge.confirmed {
+  background: #4CAF50;
+}
 
 /* Products Grid */
 .products-grid {
@@ -751,6 +754,10 @@ tbody tr:last-child td {
 }
 .btn.pending:hover {
   background: rgb(250, 188, 74);
+}
+
+.btn.btn-full {
+  width: 100%;
 }
 
 /* Select Styles */
@@ -1237,3 +1244,12 @@ select:hover {
   }
 }
 
+/* payments */
+button.contactless {
+  cursor: pointer;
+  display: block;
+  border: none;
+  background: white;
+  width: 100%;
+  max-width: 500px;
+}
