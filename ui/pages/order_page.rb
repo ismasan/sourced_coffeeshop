@@ -137,23 +137,19 @@ module Pages
         end
       end
 
-      Components::Card(size: 'full') do |c|
-        c.header do
-          Components::StatusBadge(@order.payment.status)
-          h3 { 'Payment' }
-        end
-
-        c.content do
-          if !@order.open? && @order.payment.pending?
-            Sourced::UI::Components::Command(Order::StartPayment, stream_id: @order.id, class: 'nice-form') do |form|
-              form.button(class: 'btn primary btn-full', type: 'submit') { '£ start payment' }
-            end
+      if !@order.open?
+        Components::Card(size: 'full') do |c|
+          c.header do
+            Components::StatusBadge(@order.payment.status)
+            h3 { 'Payment' }
           end
-          if @order.payment.started?
-            Sourced::UI::Components::Command(Payment::Start, stream_id: @order.payment.id, class: 'nice-form') do |form|
-              form.payload_fields(order_id: @order.id, amount: @order.total.cents)
-              form.button(type: 'submit', class: 'contactless') do
-                img src: '/images/contactless-icon.svg', alt: 'Payment started', class: 'payment-started'
+
+          c.content do
+            if @order.payment.pending?
+              Sourced::UI::Components::Command(Order::StartPayment, stream_id: @order.id, class: 'nice-form') do |form|
+                form.button(type: 'submit', class: 'contactless') do
+                  img src: '/images/contactless-icon.svg', alt: 'Payment started', class: 'payment-started'
+                end
               end
             end
           end

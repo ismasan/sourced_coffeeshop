@@ -298,6 +298,11 @@ class Order < Sourced::Actor
     state.payment.id = event.payload.payment_id
   end
 
+  reaction PaymentStarted do |state, event|
+    stream_for(state.payment.id)
+      .command Payment::Start, order_id: state.id, amount: state.total.cents
+  end
+
   command ConfirmPayment do |state, cmd|
     return unless state.payment.status == :started
 

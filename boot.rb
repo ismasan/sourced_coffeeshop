@@ -60,5 +60,6 @@ Sourced.config.backend.install # unless Sourced.config.backend.installed?
 # Register Sourced deciders and reactors
 Sourced.register(Order)
 Sourced.register(OrderListings)
+Sourced.register(Payment)
 
 Zeitwerk::Loader.eager_load_all if ENV['RACK_ENV'] == 'production'

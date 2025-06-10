@@ -19,7 +19,7 @@ class Payment < Sourced::Actor
   end
 
   reaction :started do |state, event|
-    sleep 2
+    sleep 5
     stream_for(event).command :confirm
   end
 
