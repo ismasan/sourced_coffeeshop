@@ -713,6 +713,10 @@ tbody tr:last-child td {
   min-width: 80px;
 }
 
+td > form .btn {
+  padding: 0.25em 0.6em
+}
+
 .btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);

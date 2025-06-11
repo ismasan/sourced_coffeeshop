@@ -95,6 +95,9 @@ class Order < Sourced::Actor
   end
   PaymentConfirmed = Sourced::Event.define('orders.payment_confirmed')
 
+  DeliverOrder = Sourced::Command.define('orders.deliver_order')
+  OrderDelivered = Sourced::Event.define('orders.order_delivered')
+
   class State
     VAT = 0.135
 
@@ -311,5 +314,16 @@ class Order < Sourced::Actor
 
   event PaymentConfirmed do |state, event|
     state.payment.status = :confirmed
+  end
+
+      # def fulfilled? = status == :fulfilled
+  command DeliverOrder do |state, cmd|
+    # return unless state.fulfilled?
+
+    event OrderDelivered
+  end
+
+  event OrderDelivered do |state, event|
+    state.status = :delivered
   end
 end
