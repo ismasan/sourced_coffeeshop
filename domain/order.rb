@@ -187,7 +187,7 @@ class Order < Sourced::Actor
   end
 
   command AddItem do |state, cmd|
-    raise ArgumentError, 'Order not open' unless state.open?
+    return unless state.open?
 
     event ItemAdded, cmd.payload
   end
