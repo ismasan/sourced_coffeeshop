@@ -42,8 +42,8 @@ class Deliverables < Sourced::Projector::EventSourced
   end
 
   event Order::OrderFulfilled do |state, event|
-    state[:sort] = event.created_at.to_i
     state[:fulfilled] = true
+    state[:sort] = event.created_at.to_i
     check_deliverable(state)
   end
 
@@ -58,7 +58,7 @@ class Deliverables < Sourced::Projector::EventSourced
 
   reaction do |state, event|
     if state[:status] == 'ready'
-      stream_for(event).command(Order::DeliverOrder, deliverable_id: state[:id]) do |cmd|
+      stream_for(event).command(Order::DeliverOrder) do |cmd|
         cmd.delay Time.now + 5 # Simulate a delay for delivery
       end
     end
