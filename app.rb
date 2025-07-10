@@ -236,7 +236,7 @@ class App < Sinatra::Base
 
   post '/commands/?' do
     # TODO: eventually we want to check
-    # that a given user is allowed to run a command
+    # that a given user is allowed to run specific commands
     cmd = command_context.build(params[:command].to_h)
 
     Sourced::UI.streaming_command_errors(cmd, datastar) do |cmd|
