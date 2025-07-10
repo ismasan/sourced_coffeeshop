@@ -20,7 +20,10 @@ module Components
               td do
                 Components::StatusBadge(order.status)
               end
-              td { a(href: url("/orders/#{order.id}")) { order.id } }
+              td do
+                a(href: url("/orders/#{order.id}")) { order.id }
+                small { " (#{order.seq})" }
+              end
               td { order.created_at.strftime('%Y-%m-%d %H:%M') }
               td { order.members.join(', ') }
               td(class: 'money') { order.total.format }
