@@ -55,7 +55,7 @@ Sourced.configure do |config|
   end
 end
 
-Sourced.config.backend.install # unless Sourced.config.backend.installed?
+Sourced.config.backend.install unless Sourced.config.backend.installed?
 
 # Register Sourced deciders and reactors
 Sourced.register(Order)
