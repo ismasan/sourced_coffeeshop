@@ -73,6 +73,10 @@ class OrderListings < Sourced::Projector::EventSourced
     listing.updated_at = event.created_at
   end
 
+  event Order::Start do |listing, event|
+    listing.created_at = event.created_at
+  end
+
   event Order::Started do |listing, event|
     listing.created_at = event.created_at
   end
@@ -111,5 +115,13 @@ class OrderListings < Sourced::Projector::EventSourced
 
   event Order::ItemFulfilled do |listing, event|
     listing.items[event.payload.item_id][:status] = 'fulfilled'
+  end
+
+  event Order::OrderFulfilled do |listing, event|
+    listing.status = 'fulfilled'
+  end
+
+  event Order::OrderDelivered do |listing, event|
+    listing.status = 'delivered'
   end
 end
