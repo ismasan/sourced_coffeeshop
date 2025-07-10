@@ -109,6 +109,10 @@ class App < Sinatra::Base
           if sse.signals['page_key'] == 'Pages::HomePage'
             sse.merge_fragments Pages::HomePage.new
           end
+        when Deliverables::System::Updated
+          if sse.signals['page_key'] == 'Pages::BaristaPage'
+            sse.merge_fragments Components::DeliverablesTable.new(orders: Deliverables.all)
+          end
         else
           puts "Unknown event: #{evt}"
         end
