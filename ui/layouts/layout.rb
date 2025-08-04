@@ -21,7 +21,7 @@ module Layouts
           meta(name: 'viewport', content: 'width=device-width, initial-scale=1.0')
           title { @title }
           link(rel: 'stylesheet', href: hashed_asset('/css/main.css'))
-          script(type: 'module', src: 'https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0-beta.11/bundles/datastar.js')
+          script(type: 'module', src: 'https://cdn.jsdelivr.net/gh/starfederation/datastar@main/bundles/datastar.js')
         end
 
         body(data: _d.signals(fetching: false, modal: false).to_h) do
