@@ -3,6 +3,39 @@
   --sidebar-width: 530px;
 }
 
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(main-content) {
+  animation: slidePageOut 0.3s ease both;
+}
+::view-transition-new(main-content) {
+  animation: slidePageIn 0.3s ease both;
+}
+
+@keyframes slidePageOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes slidePageIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -77,6 +110,7 @@ body {
 /* Main Layout */
 #main {
   padding: 2rem 2rem 0 2rem;
+  view-transition-name: main-content;
 }
 
 #sidebar {
