@@ -47,8 +47,8 @@ class App < Sinatra::Base
 
     def open_modal(component)
       datastar.send(:stream_no_heartbeat) do |sse|
-        sse.merge_fragments component
-        sse.merge_signals modal: true
+        sse.patch_elements component
+        sse.patch_signals modal: true
       end
     end
   end
@@ -89,29 +89,29 @@ class App < Sinatra::Base
         when Order::System::Updated
           if sse.signals['page_key'] == 'Pages::OrderPage' && sse.signals['page_id'] == evt.stream_id
             order = Order.load(evt.stream_id)
-            sse.merge_fragments Pages::OrderPage.new(
+            sse.patch_elements Pages::OrderPage.new(
               order: order.state,
               events: order.history
             )
           elsif sse.signals['page_key'] == 'Pages::FulfillmentPage' && sse.signals['page_id'] == evt.stream_id
             order = Order.load(evt.stream_id)
-            sse.merge_fragments Pages::FulfillmentPage.new(
+            sse.patch_elements Pages::FulfillmentPage.new(
               order: order.state,
             )
           end
         when OrderListings::System::Updated
           if %w[Pages::HomePage Pages::CashierPage].include?(sse.signals['page_key'])
-            sse.merge_fragments Components::OrdersTable.new(orders: OrderListings.all)
+            sse.patch_elements Components::OrdersTable.new(orders: OrderListings.all)
           elsif %w[Pages::HomePage Pages::BaristaPage].include?(sse.signals['page_key'])
-            sse.merge_fragments Components::FulfillmentTable.new(orders: OrderListings.placed)
+            sse.patch_elements Components::FulfillmentTable.new(orders: OrderListings.placed)
           end
         when PaymentListings::System::Updated
           if sse.signals['page_key'] == 'Pages::HomePage'
-            sse.merge_fragments Pages::HomePage.new
+            sse.patch_elements Pages::HomePage.new
           end
         when Deliverables::System::Updated
           if sse.signals['page_key'] == 'Pages::BaristaPage'
-            sse.merge_fragments Components::DeliverablesTable.new(orders: Deliverables.all)
+            sse.patch_elements Components::DeliverablesTable.new(orders: Deliverables.all)
           end
         else
           puts "Unknown event: #{evt}"
@@ -201,7 +201,7 @@ class App < Sinatra::Base
         sse.execute_script <<-JS
           history.replaceState({}, '', '/orders/#{order.id}/#{upto}')
         JS
-        sse.merge_fragments Pages::OrderPage.new(
+        sse.patch_elements Pages::OrderPage.new(
           order: order.state,
           events: order.history,
           seq: upto,
