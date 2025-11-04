@@ -141,6 +141,17 @@ class App < Sinatra::Base
     end
   end
 
+  get '/blank' do
+    <<~HTML
+    <!DOCTYPE html>
+    <html>
+      <head>
+      </head>
+      <body></body>
+    </html>
+    HTML
+  end
+
   get '/logout/?' do
     session.delete :username
     redirect '/'
