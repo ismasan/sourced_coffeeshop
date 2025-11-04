@@ -46,6 +46,8 @@ puts "DATABASE_URL #{DATABASE_URL}"
 Sourced.configure do |config|
   config.backend = Sequel.connect(DATABASE_URL)
 
+  config.executor = :thread
+
   config.error_strategy do |s|
     s.retry(times: 1, after: 1)
 
