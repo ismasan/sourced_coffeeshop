@@ -11,7 +11,7 @@ GIT
 
 GIT
   remote: https://github.com/ismasan/sourced.git
-  revision: bcfff9d5cbd02dff9ee1a34c00a9a9887ee651e3
+  revision: a398b1b2663028a7a652b8be36b265af7d14c18f
   specs:
     sourced (0.0.1)
       async
@@ -54,12 +54,16 @@ GEM
       ruby2_keywords (~> 0.0.1)
     nio4r (2.7.4)
     pg (1.5.9)
-    phlex (2.0.0.rc1)
-    phlex-sinatra (0.4.0)
-      phlex (>= 1.7.0)
+    phlex (2.4.0.beta2)
+      refract (~> 1.0)
+      zeitwerk (~> 2.7)
+    phlex-sinatra (0.5.0)
+      phlex (>= 2)
+      sinatra
     plumb (0.0.12)
       bigdecimal
       concurrent-ruby
+    prism (1.6.0)
     puma (6.6.0)
       nio4r (~> 2.0)
     rack (3.2.0)
@@ -71,6 +75,9 @@ GEM
       base64 (>= 0.1.0)
       rack (>= 3.0.0)
     rack-unreloader (2.1.0)
+    refract (1.1.0)
+      prism
+      zeitwerk
     ruby2_keywords (0.0.5)
     sequel (5.93.0)
       bigdecimal
@@ -94,7 +101,7 @@ DEPENDENCIES
   dotenv
   money
   pg
-  phlex (= 2.0.0.rc1)
+  phlex
   phlex-sinatra
   plumb
   puma
@@ -106,4 +113,4 @@ DEPENDENCIES
   zeitwerk (~> 2.7)
 
 BUNDLED WITH
-   2.6.3
+   2.7.2

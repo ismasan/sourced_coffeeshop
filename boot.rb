@@ -26,11 +26,11 @@ CODE_LOADER.setup
 $LOAD_PATH.unshift File.dirname(__FILE__)
 
 # Fix Phlex 2.0.0.rc1 to work with Phlex::Sinatra
-module Phlex
-  class SGML
-    def helpers = @_context.view_context
-  end
-end
+# module Phlex
+#   class SGML
+#     def helpers = @_context.view_context
+#   end
+# end
 
 # Money
 I18n.config.available_locales = :en
