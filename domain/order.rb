@@ -8,7 +8,7 @@ class Order < Sourced::Actor
   # Here we publish an ephemeral event
   # so that the UI can react to it
   # In future, Sourced will have a special DSL for this
-  sync do |state, command, events|
+  sync do |state:, command:, events:|
     Sourced.config.backend.pubsub.publish('system', command.follow(System::Updated))
   end
 
@@ -172,11 +172,6 @@ class Order < Sourced::Actor
     State.new(id)
   end
 
-  # All events, not up to
-  def history
-    events(upto: nil)
-  end
-
   command Start do |state, cmd|
     raise ArgumentError, 'Order already started' if state.status != :new
 
@@ -276,7 +271,7 @@ class Order < Sourced::Actor
 
   reaction ItemFulfilled do |state, event|
     if state.items.values.all?(&:fulfilled?)
-      stream_for(event).command FulfillOrder
+      dispatch(FulfillOrder)
     end
   end
 
@@ -302,8 +297,11 @@ class Order < Sourced::Actor
   end
 
   reaction PaymentStarted do |state, event|
-    stream_for(state.payment.id)
-      .command Payment::Start, order_id: state.id, amount: state.total.cents
+    dispatch(
+      Payment::Start, 
+      order_id: state.id, 
+      amount: state.total.cents
+    ).to(state.payment.id)
   end
 
   command ConfirmPayment do |state, cmd|

@@ -20,7 +20,7 @@ class Payment < Sourced::Actor
 
   reaction :started do |state, event|
     sleep 5
-    stream_for(event).command :confirm
+    dispatch :confirm
   end
 
   command :confirm do |state, cmd|
@@ -32,7 +32,6 @@ class Payment < Sourced::Actor
   end
 
   reaction :confirmed do |state, event|
-    stream_for(state.order_id)
-      .command Order::ConfirmPayment, payment_id: state.id
+    dispatch(Order::ConfirmPayment, payment_id: state.id).to(state.order_id)
   end
 end

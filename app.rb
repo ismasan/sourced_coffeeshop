@@ -64,11 +64,34 @@ class App < Sinatra::Base
     # Here we should re-render on reconnect, but NOT on page load.
     channel = Sourced.config.backend.pubsub.subscribe('system')
 
-    datastar.on_connect do |*args|
-      # Here we should keep track of whether 
-      # this is an initial page load, or a reconnect.
-      # and re-render if the latter.
-      puts 'client connect'
+    datastar.on_connect do |sse|
+      # on connect, we make sure to render the page again
+      # so that browser tabs reconnecting on focus catch up to the latest state
+      # TODO: this block should be similar to the stream below
+      # I need a better way to declare these blocks
+      puts "client connect #{sse.signals.inspect}"
+      case sse.signals['page_key']
+      when 'Pages::OrderPage'
+        order = Sourced.load(Order, sse.signals['page_id'])
+        sse.patch_elements Pages::OrderPage.new(
+          order: order.state,
+          events: Sourced.history_for(order),
+        )
+      when 'Pages::FulfillmentPage'
+        order = Sourced.load(Order, sse.signals['page_id'])
+        sse.patch_elements Pages::FulfillmentPage.new(
+          order: order.state,
+        )
+
+      when 'Pages::HomePage', 'Pages::CashierPage'
+        sse.patch_elements Components::OrdersTable.new(orders: OrderListings.all)
+      when 'Pages::HomePage'
+        sse.patch_elements Components::FulfillmentTable.new(orders: OrderListings.placed)
+      when 'Pages::HomePage'
+        sse.patch_elements Pages::HomePage.new
+      when 'Pages::BaristaPage'
+        sse.patch_elements Pages::BaristaPage.new(layout: false)
+      end
     end
     datastar.on_client_disconnect do |*args|
       puts 'client disconnect'
@@ -88,13 +111,13 @@ class App < Sinatra::Base
         case evt
         when Order::System::Updated
           if sse.signals['page_key'] == 'Pages::OrderPage' && sse.signals['page_id'] == evt.stream_id
-            order = Order.load(evt.stream_id)
+            order = Sourced.load(Order, evt.stream_id)
             sse.patch_elements Pages::OrderPage.new(
               order: order.state,
-              events: order.history
+              events: Sourced.history_for(order),
             )
           elsif sse.signals['page_key'] == 'Pages::FulfillmentPage' && sse.signals['page_id'] == evt.stream_id
-            order = Order.load(evt.stream_id)
+            order = Sourced.load(Order, evt.stream_id)
             sse.patch_elements Pages::FulfillmentPage.new(
               order: order.state,
             )
@@ -166,21 +189,21 @@ class App < Sinatra::Base
   end
 
   get '/orders/:id/?' do |id|
-    order = Order.load(id)
+    order = Sourced.load(Order, id)
     phlex Pages::OrderPage.new(
       order: order.state, 
-      events: order.history,
+      events: Sourced.history_for(order),
       layout: true
     )
   end
 
   get '/orders/:id/fulfillment/?' do |id|
-    order = Order.load(id)
+    order = Sourced.load(Order, id)
     raise "order is not placed" if !order.state.placed?
 
     phlex Pages::FulfillmentPage.new(
       order: order.state, 
-      events: order.history,
+      events: Sourced.history_for(order),
       layout: true
     )
   end
@@ -193,7 +216,7 @@ class App < Sinatra::Base
   end
 
   get '/orders/:id/items/:item_id/?' do |order_id, item_id|
-    order = Order.load(order_id)
+    order = Sourced.load(Order, order_id)
     open_modal Components::OrderItemModal.new(
       order: order.state,
       item_id:
@@ -204,7 +227,7 @@ class App < Sinatra::Base
   # Ex. /todo-lists/important-things/34
   get '/orders/:id/:upto?' do |id, upto|
     upto = Types::Lax::Integer.parse(upto)
-    order = Order.load(id, upto:)
+    order = Sourced.load(Order, id, upto:)
     # If this is an SSE request, stream the view back to to the browser
     # If a normal page load, render normally with layout
     if datastar.sse?
@@ -214,14 +237,14 @@ class App < Sinatra::Base
         JS
         sse.patch_elements Pages::OrderPage.new(
           order: order.state,
-          events: order.history,
+          events: Sourced.history_for(order),
           seq: upto,
         )
       end
     else
       phlex Pages::OrderPage.new(
         order: order.state, 
-        events: order.history,
+        events: Sourced.history_for(order),
         seq: upto,
         layout: true
       )
@@ -241,8 +264,10 @@ class App < Sinatra::Base
     raise "Invalid command #{cmd.inspect}" if !cmd.valid?
     raise "Not an Order::Start command #{cmd.inspect}" if !cmd.is_a?(Order::Start)
 
-    order, _ = Sourced.handle_command(cmd)
-    redirect "/orders/#{order.id}"
+    Sourced.dispatch(cmd)
+    # datastar.redirect("/orders/#{cmd.stream_id}")
+    # order, _ = Sourced.handle_command(cmd)
+    redirect "/orders/#{cmd.stream_id}"
   end
 
   post '/commands/?' do
@@ -251,7 +276,7 @@ class App < Sinatra::Base
     cmd = command_context.build(params[:command].to_h)
 
     Sourced::UI.streaming_command_errors(cmd, datastar) do |cmd|
-      Sourced.schedule_commands([cmd])
+      Sourced.dispatch(cmd)
       halt 204
     end
   end

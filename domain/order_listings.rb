@@ -9,18 +9,18 @@ class OrderListings < Sourced::Projector::EventSourced
 
   # This block runs in a transaction when handling events
   # Just write a JSON representation of these listings
-  sync do |listing, _command, events|
-    path = File.join(DATA_DIR, "#{listing.id}.json")
+  sync do |state:, events:, replaying:|
+    path = File.join(DATA_DIR, "#{state.id}.json")
 
-    if listing.status == 'deleted'
+    if state.status == 'deleted'
       File.unlink(path) if File.exist?(path)
     else
       FileUtils.mkdir_p(DATA_DIR)
-      File.write(path, JSON.pretty_generate(listing.to_h))
+      File.write(path, JSON.pretty_generate(state.to_h))
     end
   end
 
-  sync do |list, _command, events|
+  sync do |state:, events:, replaying:|
     Sourced.config.backend.pubsub.publish('system', events.last.follow(System::Updated))
   end
 
