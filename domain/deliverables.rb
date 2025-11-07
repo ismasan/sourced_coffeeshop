@@ -14,7 +14,7 @@ class Deliverables < Sourced::Projector::EventSourced
   end
 
   # This block runs in a transaction when handling events
-  # Just write a JSON representation of these listings
+  # Just write order listings to JSON files
   sync do |state:, events:, replaying:|
     path = File.join(DATA_DIR, "#{state[:id]}.json")
 
