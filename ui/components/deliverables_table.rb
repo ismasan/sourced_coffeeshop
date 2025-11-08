@@ -5,9 +5,20 @@ module Components
     end
 
     def view_template
+      if @orders.any?
+        orders_table
+      else
+        p { 'No orders to deliver' }
+      end
+    end
+
+    private
+
+    def orders_table
       table(id: 'deliverables-table', class: 'orders-table') do 
         thead do
           th(class: 'cell--order-id') { 'Order ID' }
+          th { 'Customer' }
           th { '' }
           th { '' }
         end
@@ -17,6 +28,7 @@ module Components
               td do
                 Components::StatusBadge('ready', label: order[:id])
               end
+              td { order[:customer_name] }
               td do
                 a(href: url("/orders/#{order[:id]}")) do
                   'details'

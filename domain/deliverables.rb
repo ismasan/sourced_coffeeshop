@@ -57,12 +57,16 @@ class Deliverables < Sourced::Projector::EventSourced
     state[:status] = 'delivered'
   end
 
-  reaction do |state, event|
-    if state[:status] == 'ready'
-      # Simulate slow command or grace period
-      dispatch(Order::DeliverOrder).at(Time.now + 5)
-    end
+  event Order::CustomerNameSet do |state, event|
+    state[:customer_name] = event.payload.customer_name
   end
+
+  # reaction do |state, event|
+  #   if state[:status] == 'ready'
+  #     # Simulate slow command or grace period
+  #     dispatch(Order::DeliverOrder).at(Time.now + 5)
+  #   end
+  # end
 
   private def check_deliverable(state)
     state[:status] = 'ready' if state[:fulfilled] && state[:paid] 
