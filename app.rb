@@ -64,35 +64,6 @@ class App < Sinatra::Base
     # Here we should re-render on reconnect, but NOT on page load.
     channel = Sourced.config.backend.pubsub.subscribe('system')
 
-    datastar.on_connect do |sse|
-      # on connect, we make sure to render the page again
-      # so that browser tabs reconnecting on focus catch up to the latest state
-      # TODO: this block should be similar to the stream below
-      # I need a better way to declare these blocks
-      puts "client connect #{sse.signals.inspect}"
-      case sse.signals['page_key']
-      when 'Pages::OrderPage'
-        order = Sourced.load(Order, sse.signals['page_id'])
-        sse.patch_elements Pages::OrderPage.new(
-          order: order.state,
-          events: Sourced.history_for(order),
-        )
-      when 'Pages::FulfillmentPage'
-        order = Sourced.load(Order, sse.signals['page_id'])
-        sse.patch_elements Pages::FulfillmentPage.new(
-          order: order.state,
-        )
-
-      when 'Pages::HomePage', 'Pages::CashierPage'
-        sse.patch_elements Components::OrdersTable.new(orders: OrderListings.all)
-      when 'Pages::HomePage'
-        sse.patch_elements Components::FulfillmentTable.new(orders: OrderListings.placed)
-      when 'Pages::HomePage'
-        sse.patch_elements Pages::HomePage.new
-      when 'Pages::BaristaPage'
-        sse.patch_elements Pages::BaristaPage.new(layout: false)
-      end
-    end
     datastar.on_client_disconnect do |*args|
       puts 'client disconnect'
       channel.stop
@@ -107,6 +78,32 @@ class App < Sinatra::Base
     end
 
     datastar.stream do |sse|
+      puts 'client connect'
+      # on connect, we make sure to render the page again
+      # so that browser tabs reconnecting on focus catch up to the latest state
+      # TODO: this block should be similar to the stream below
+      # I need a better way to declare these blocks
+      case sse.signals['page_key']
+      when 'Pages::OrderPage'
+        order = Sourced.load(Order, sse.signals['page_id'])
+        sse.patch_elements Pages::OrderPage.new(
+          order: order.state,
+          events: Sourced.history_for(order),
+        )
+      when 'Pages::FulfillmentPage'
+        order = Sourced.load(Order, sse.signals['page_id'])
+        sse.patch_elements Pages::FulfillmentPage.new(
+          order: order.state,
+        )
+
+      when 'Pages::CashierPage'
+        sse.patch_elements Pages::CashierPage.new
+      when 'Pages::HomePage'
+        sse.patch_elements Pages::HomePage.new
+      when 'Pages::BaristaPage'
+        sse.patch_elements Pages::BaristaPage.new
+      end
+
       channel.start do |evt, channel|
         case evt
         when Order::System::Updated
@@ -123,10 +120,13 @@ class App < Sinatra::Base
             )
           end
         when OrderListings::System::Updated
-          if %w[Pages::HomePage Pages::CashierPage].include?(sse.signals['page_key'])
-            sse.patch_elements Components::OrdersTable.new(orders: OrderListings.all)
-          elsif %w[Pages::HomePage Pages::BaristaPage].include?(sse.signals['page_key'])
-            sse.patch_elements Components::FulfillmentTable.new(orders: OrderListings.placed)
+          case sse.signals['page_key']
+          when 'Pages::HomePage'
+            sse.patch_elements Pages::HomePage.new
+          when 'Pages::CashierPage'
+            sse.patch_elements Pages::CashierPage.new
+          when 'Pages::BaristaPage'
+            sse.patch_elements Pages::BaristaPage.new
           end
         when PaymentListings::System::Updated
           if sse.signals['page_key'] == 'Pages::HomePage'
@@ -134,7 +134,7 @@ class App < Sinatra::Base
           end
         when Deliverables::System::Updated
           if sse.signals['page_key'] == 'Pages::BaristaPage'
-            sse.patch_elements Components::DeliverablesTable.new(orders: Deliverables.all)
+            sse.patch_elements Pages::BaristaPage.new
           end
         else
           puts "Unknown event: #{evt}"
