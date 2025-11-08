@@ -34,6 +34,7 @@ class OrderListings < Sourced::Projector::EventSourced
     attribute :members, Types::Array[String].default { [] }
     attribute :created_at, Types::Forms::Time, writer: true
     attribute :updated_at, Types::Forms::Time.nullable, writer: true
+    attribute :payment_status, Types::String.default('--'), writer: true
 
     def total
       cents = items.values.sum do |item|
@@ -115,6 +116,14 @@ class OrderListings < Sourced::Projector::EventSourced
 
   event Order::ItemFulfilled do |listing, event|
     listing.items[event.payload.item_id][:status] = 'fulfilled'
+  end
+
+  event Order::PaymentStarted do |listing, event|
+    listing.payment_status = 'processing'
+  end
+
+  event Order::PaymentConfirmed do |listing, event|
+    listing.payment_status = 'paid'
   end
 
   event Order::OrderFulfilled do |listing, event|

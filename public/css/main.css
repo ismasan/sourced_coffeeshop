@@ -485,6 +485,16 @@ tr:hover {
 tbody tr:last-child td {
   border-bottom: none;
 }
+.payment-paid {
+  color: #28a745; /* Green color */
+}
+
+.payment-paid::after {
+  content: " ✓"; /* Checkmark symbol */
+  color: #28a745; /* Same green color */
+  font-weight: bold;
+  margin-left: 0.5em; /* Add some spacing */
+}
 
 /* Money formatting */
 .money {

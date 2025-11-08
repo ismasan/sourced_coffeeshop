@@ -9,7 +9,8 @@ module Components
         thead do
           th { 'status' }
           th(class: 'cell--order-id') { 'Order ID' }
-          th(class: 'cell--progress') { 'progress' }
+          th(class: 'cell--progress') { 'Fulfilment' }
+          th(class: 'cell--payment') { 'Payment' }
         end
         tbody do
           @orders.each do |order|
@@ -19,6 +20,7 @@ module Components
               end
               td { a(href: url("/orders/#{order.id}/fulfillment")) { order.id } }
               td { progress(order) }
+              td(class: "payment-#{order.payment_status}") { order.payment_status }
             end
           end
         end
