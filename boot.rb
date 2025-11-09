@@ -40,11 +40,12 @@ Money.locale_backend = nil
 
 DATABASE_URL = ENV.fetch('DOCKER_DATABASE_URL') {ENV.fetch('DATABASE_URL')}
 
-puts "DATABASE_URL #{DATABASE_URL}"
-
 # Configure Sourced
 Sourced.configure do |config|
-  config.backend = Sequel.connect(DATABASE_URL)
+  unless ENV['TEST']
+    puts "DATABASE_URL #{DATABASE_URL}"
+    config.backend = Sequel.connect(DATABASE_URL) 
+  end
 
   config.executor = :thread
 

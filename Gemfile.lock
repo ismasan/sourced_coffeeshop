@@ -36,14 +36,25 @@ GEM
       json
       logger
       rack (>= 3.1.14)
+    date (3.4.1)
+    debug (1.11.0)
+      irb (~> 1.10)
+      reline (>= 0.3.8)
+    diff-lcs (1.6.2)
     dotenv (3.1.8)
+    erb (5.1.1)
     fiber-annotation (0.2.0)
     fiber-local (1.1.0)
       fiber-storage
     fiber-storage (1.0.1)
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
+    io-console (0.8.1)
     io-event (1.14.0)
+    irb (1.15.2)
+      pp (>= 0.6.0)
+      rdoc (>= 4.0.0)
+      reline (>= 0.4.2)
     json (2.15.2)
     logger (1.7.0)
     metrics (0.15.0)
@@ -62,7 +73,13 @@ GEM
     plumb (0.0.17)
       bigdecimal
       concurrent-ruby
+    pp (0.6.3)
+      prettyprint
+    prettyprint (0.2.0)
     prism (1.6.0)
+    psych (5.2.6)
+      date
+      stringio
     puma (6.6.0)
       nio4r (~> 2.0)
     rack (3.2.4)
@@ -74,9 +91,28 @@ GEM
       base64 (>= 0.1.0)
       rack (>= 3.0.0)
     rack-unreloader (2.1.0)
+    rdoc (6.15.0)
+      erb
+      psych (>= 4.0.0)
+      tsort
     refract (1.1.0)
       prism
       zeitwerk
+    reline (0.6.2)
+      io-console (~> 0.5)
+    rspec (3.13.2)
+      rspec-core (~> 3.13.0)
+      rspec-expectations (~> 3.13.0)
+      rspec-mocks (~> 3.13.0)
+    rspec-core (3.13.6)
+      rspec-support (~> 3.13.0)
+    rspec-expectations (3.13.5)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.13.0)
+    rspec-mocks (3.13.7)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.13.0)
+    rspec-support (3.13.6)
     ruby2_keywords (0.0.5)
     sequel (5.93.0)
       bigdecimal
@@ -87,8 +123,10 @@ GEM
       rack-protection (= 4.1.1)
       rack-session (>= 2.0.0, < 3)
       tilt (~> 2.0)
+    stringio (3.1.7)
     tilt (2.6.0)
     traces (0.18.2)
+    tsort (0.2.0)
     zeitwerk (2.7.3)
 
 PLATFORMS
@@ -97,6 +135,7 @@ PLATFORMS
 
 DEPENDENCIES
   datastar
+  debug
   dotenv
   money
   pg
@@ -105,6 +144,7 @@ DEPENDENCIES
   plumb
   puma
   rack-unreloader (~> 2.1)
+  rspec
   sequel
   sinatra (~> 4.0)
   sourced!

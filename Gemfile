@@ -21,5 +21,7 @@ gem 'sourced-ui', github: 'ismasan/sourced-ui'
 gem 'zeitwerk', '~> 2.7'
 
 group :development do
+  gem 'debug'
   gem 'rack-unreloader', '~> 2.1'
+  gem 'rspec'
 end
