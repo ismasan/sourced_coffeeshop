@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/ismasan/sourced-ui.git
-  revision: c04e1ceeae9389f72a7118189122d77626d5d275
+  revision: 51f8cfd20b1b8776331811ecf9c34481406b70c4
   specs:
     sourced-ui (0.1.0)
       datastar

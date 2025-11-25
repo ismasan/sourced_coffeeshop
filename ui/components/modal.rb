@@ -11,7 +11,7 @@ module Components
       yield self
 
       div(id: 'modal', data: { show: '$modal' }) do
-        div(class: 'modal-underlay', data: { 'on-click' => '$modal = false' })
+        div(class: 'modal-underlay', data: { 'on:click' => '$modal = false' })
         div(class: 'modal-content') do
           div(class: 'modal-header') do
             h1 { @title }
@@ -20,7 +20,7 @@ module Components
             end
             div(class: 'modal-buttons') do
               if @buttons
-                button(class: 'btn danger', data: { 'on-click' => '$modal = false' }) do
+                button(class: 'btn danger', data: { 'on:click' => '$modal = false' }) do
                   'Close'
                 end
               end

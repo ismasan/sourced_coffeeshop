@@ -21,7 +21,7 @@ module Layouts
           meta(name: 'viewport', content: 'width=device-width, initial-scale=1.0')
           title { @title }
           link(rel: 'stylesheet', href: hashed_asset('/css/main.css'))
-          script(type: 'module', src: 'https://cdn.jsdelivr.net/gh/starfederation/datastar@main/bundles/datastar.js')
+          script(type: 'module', src: 'https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.6/bundles/datastar.js')
         end
 
         body(data: _d.signals(fetching: false, modal: false).to_h) do
@@ -40,7 +40,7 @@ module Layouts
 
           yield
           div(id: 'modal', data: { show: '$modal' })
-          onload = _d.on.load.get(url(@sse))
+          onload = _d.init.get(url(@sse))
           # onload needs to be at the end
           # to make sure to collect all signals on the page
           div(data: onload.to_h)

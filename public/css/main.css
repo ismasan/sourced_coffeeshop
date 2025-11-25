@@ -859,7 +859,7 @@ select:hover {
 .order-item.fulfilled {
   border-color: #4CAF50;
 }
-.order-item[data-on-click]:hover {
+.order-item[data-on:click]:hover {
   background: #f0f2f5;
   border-color: #d0d0d0;
   cursor: pointer;
