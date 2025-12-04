@@ -4,6 +4,7 @@ require 'zeitwerk'
 require 'phlex-sinatra'
 require 'money'
 require 'sourced'
+require 'sourced/ui'
 require 'sourced/ui/components'
 require 'sequel'
 require 'dotenv'
@@ -44,10 +45,10 @@ DATABASE_URL = ENV.fetch('DOCKER_DATABASE_URL') {ENV.fetch('DATABASE_URL')}
 Sourced.configure do |config|
   unless ENV['TEST']
     puts "DATABASE_URL #{DATABASE_URL}"
-    config.backend = Sequel.connect(DATABASE_URL) 
+    config.backend = Sequel.connect(DATABASE_URL)
   end
 
-  config.executor = :thread
+  config.executor = :async
 
   config.error_strategy do |s|
     s.retry(times: 1, after: 1)

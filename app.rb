@@ -65,33 +65,33 @@ class App < Sinatra::Base
     channel = Sourced.config.backend.pubsub.subscribe('system')
 
     datastar.on_client_disconnect do |*args|
-      puts 'client disconnect'
+      Console.info 'client disconnect'
       channel.stop
     end
     datastar.on_server_disconnect do |*args|
-      puts 'server disconnect'
+      Console.info 'server disconnect'
       channel.stop
     end
     datastar.on_error do |ex|
-      puts "ERROR #{ex}"
+      Console.info "ERROR #{ex}"
       channel.stop
     end
 
     datastar.stream do |sse|
-      puts 'client connect'
+      Console.info 'client connect'
       # on connect, we make sure to render the page again
       # so that browser tabs reconnecting on focus catch up to the latest state
       # TODO: this block should be similar to the stream below
       # I need a better way to declare these blocks
       case sse.signals['page_key']
       when 'Pages::OrderPage'
-        order = Sourced.load(Order, sse.signals['page_id'])
+        order, events = Sourced.load(Order, sse.signals['page_id'])
         sse.patch_elements Pages::OrderPage.new(
           order: order.state,
-          events: Sourced.history_for(order),
+          events:
         )
       when 'Pages::FulfillmentPage'
-        order = Sourced.load(Order, sse.signals['page_id'])
+        order, _ = Sourced.load(Order, sse.signals['page_id'])
         sse.patch_elements Pages::FulfillmentPage.new(
           order: order.state,
         )
@@ -108,13 +108,13 @@ class App < Sinatra::Base
         case evt
         when Order::System::Updated
           if sse.signals['page_key'] == 'Pages::OrderPage' && sse.signals['page_id'] == evt.stream_id
-            order = Sourced.load(Order, evt.stream_id)
+            order, events = Sourced.load(Order, evt.stream_id)
             sse.patch_elements Pages::OrderPage.new(
               order: order.state,
-              events: Sourced.history_for(order),
+              events:
             )
           elsif sse.signals['page_key'] == 'Pages::FulfillmentPage' && sse.signals['page_id'] == evt.stream_id
-            order = Sourced.load(Order, evt.stream_id)
+            order, _ = Sourced.load(Order, evt.stream_id)
             sse.patch_elements Pages::FulfillmentPage.new(
               order: order.state,
             )
@@ -189,21 +189,21 @@ class App < Sinatra::Base
   end
 
   get '/orders/:id/?' do |id|
-    order = Sourced.load(Order, id)
+    order, events = Sourced.load(Order, id)
     phlex Pages::OrderPage.new(
       order: order.state, 
-      events: Sourced.history_for(order),
+      events:,
       layout: true
     )
   end
 
   get '/orders/:id/fulfillment/?' do |id|
-    order = Sourced.load(Order, id)
+    order, events = Sourced.load(Order, id)
     raise "order is not placed" if !order.state.placed?
 
     phlex Pages::FulfillmentPage.new(
       order: order.state, 
-      events: Sourced.history_for(order),
+      events:,
       layout: true
     )
   end
@@ -216,7 +216,7 @@ class App < Sinatra::Base
   end
 
   get '/orders/:id/items/:item_id/?' do |order_id, item_id|
-    order = Sourced.load(Order, order_id)
+    order, _ = Sourced.load(Order, order_id)
     open_modal Components::OrderItemModal.new(
       order: order.state,
       item_id:
@@ -227,7 +227,7 @@ class App < Sinatra::Base
   # Ex. /todo-lists/important-things/34
   get '/orders/:id/:upto?' do |id, upto|
     upto = Types::Lax::Integer.parse(upto)
-    order = Sourced.load(Order, id, upto:)
+    order, _ = Sourced.load(Order, id, upto:)
     # If this is an SSE request, stream the view back to to the browser
     # If a normal page load, render normally with layout
     if datastar.sse?
@@ -283,9 +283,9 @@ class App < Sinatra::Base
 end
 
 
-trap('INT') do
-  puts('Closing!')
-  sleep 1
-  puts('Byebye!')
-  exit
-end
+# trap('INT') do
+#   puts('Closing!')
+#   sleep 1
+#   puts('Byebye!')
+#   exit
+# end
