@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/ismasan/sourced-ui.git
-  revision: 6e71d3acf89f2f6a87e37c6f579447fdf10423f7
+  revision: 6c9641202a7d23c4849f9a74bba3aab67d003b39
   specs:
     sourced-ui (0.1.0)
       datastar (= 1.0.1)
@@ -11,7 +11,7 @@ GIT
 
 GIT
   remote: https://github.com/ismasan/sourced.git
-  revision: 3daccbd0e37d30eea15d45a407858204e72cc267
+  revision: 6701014b5f37cf1583cc952788a2d12867663b15
   specs:
     sourced (0.0.1)
       async

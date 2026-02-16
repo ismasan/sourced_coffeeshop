@@ -53,12 +53,12 @@ class Deliverables < Sourced::Projector::EventSourced
     check_deliverable(state)
   end
 
-  event Order::OrderDelivered do |state, event|
-    state[:status] = 'delivered'
-  end
-
   event Order::CustomerNameSet do |state, event|
     state[:customer_name] = event.payload.customer_name
+  end
+
+  event Order::OrderDelivered do |state, event|
+    state[:status] = 'delivered'
   end
 
   reaction do |state, event|
