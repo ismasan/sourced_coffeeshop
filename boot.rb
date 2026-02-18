@@ -44,7 +44,7 @@ DATABASE_URL = ENV.fetch('DOCKER_DATABASE_URL') {ENV.fetch('DATABASE_URL')}
 # Configure Sourced
 Sourced.configure do |config|
   unless ENV['TEST']
-    puts "DATABASE_URL #{DATABASE_URL}"
+    # config.backend = Sequel.sqlite('./storage/data.db')
     config.backend = Sequel.connect(DATABASE_URL)
   end
 

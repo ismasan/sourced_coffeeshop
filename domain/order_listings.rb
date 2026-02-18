@@ -21,7 +21,7 @@ class OrderListings < Sourced::Projector::EventSourced
   end
 
   sync do |state:, events:, replaying:|
-    Sourced.config.backend.pubsub.publish('system', events.last.follow(System::Updated))
+    Sourced.config.pubsub.publish('system', events.last.follow(System::Updated))
   end
 
   Items = Types::Hash[Types::Symbol.transform(String, &:to_s), Types::Hash.default { {} }]

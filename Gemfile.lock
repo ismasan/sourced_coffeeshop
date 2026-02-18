@@ -11,7 +11,7 @@ GIT
 
 GIT
   remote: https://github.com/ismasan/sourced.git
-  revision: 6701014b5f37cf1583cc952788a2d12867663b15
+  revision: 90aeba6a58ee94ec4a47a4c702737ef12fdbfa6d
   specs:
     sourced (0.0.1)
       async
@@ -60,7 +60,7 @@ GEM
     benchmark-ips (2.14.0)
     bigdecimal (4.0.1)
     concurrent-ruby (1.3.5)
-    console (1.34.2)
+    console (1.34.3)
       fiber-annotation
       fiber-local (~> 1.1)
       json
@@ -206,7 +206,6 @@ GEM
 
 PLATFORMS
   arm64-darwin-24
-  ruby
 
 DEPENDENCIES
   benchmark-ips

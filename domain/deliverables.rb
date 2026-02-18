@@ -29,7 +29,7 @@ class Deliverables < Sourced::Projector::EventSourced
 
   sync do |state:, events:, replaying:|
     # Unless replaying?
-    Sourced.config.backend.pubsub.publish('system', events.last.follow(System::Updated))
+    Sourced.config.pubsub.publish('system', events.last.follow(System::Updated))
   end
 
   state do |id|

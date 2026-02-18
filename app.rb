@@ -62,7 +62,7 @@ class App < Sinatra::Base
     # This could be beneficial
     # TODO: the browswer can disconnect (by default Datastar disconnects when the browser tab is not active)
     # Here we should re-render on reconnect, but NOT on page load.
-    channel = Sourced.config.backend.pubsub.subscribe('system')
+    channel = Sourced.config.pubsub.subscribe('system')
 
     datastar.on_client_disconnect do |*args|
       Console.info 'client disconnect'

@@ -23,7 +23,7 @@ class PaymentListings < Sourced::Projector::EventSourced
   end
 
   sync do |state:, events:, replaying:|
-    Sourced.config.backend.pubsub.publish('system', events.last.follow(System::Updated))
+    Sourced.config.pubsub.publish('system', events.last.follow(System::Updated))
   end
 
   state do |id|

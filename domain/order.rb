@@ -9,7 +9,7 @@ class Order < Sourced::Actor
   # so that the UI can react to it
   # In future, Sourced will have a special DSL for this
   sync do |state:, command:, events:|
-    Sourced.config.backend.pubsub.publish('system', command.follow(System::Updated))
+    Sourced.config.pubsub.publish('system', command.follow(System::Updated))
   end
 
   Start = Sourced::Command.define('orders.start')
