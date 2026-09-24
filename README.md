@@ -68,6 +68,18 @@ dashboard (event log, consumer groups, topology) is at <http://localhost:9292/so
 
 `HOST`, `PORT` and `COUNT` (Falcon worker processes) can be changed in `.env`.
 
+### Reloading on code changes
+
+```bash
+bin/dev
+```
+
+Runs `falcon host` and, whenever a Ruby or config file changes, sends `SIGHUP` to Falcon, which
+forks fresh workers that load the app from scratch. Needs [watchexec](https://github.com/watchexec/watchexec)
+(`brew install watchexec`) or `fswatch` on the `PATH`; without either it just runs the server.
+Browsers reconnect their SSE streams and catch up automatically. Changes to `.env` still need a
+full restart.
+
 ## Tests
 
 ```bash

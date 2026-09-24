@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+#
+# Development server with code reloading.
+#
+# Runs `falcon host` and, whenever a Ruby or config file changes, sends SIGHUP
+# to the Falcon controller. Falcon then forks fresh workers, each of which
+# loads config.ru -> boot.rb from scratch, so app, domain, UI and gem changes
+# are all picked up. The controller keeps the port; browsers reconnect their
+# SSE streams and catch up on connect.
+#
+# Needs a file watcher: watchexec (brew install watchexec) or fswatch.
+# Without one the server still runs, just without reloading.
+#
+# Usage: bin/dev            (HOST / PORT / COUNT come from .env)
+#        PORT=9300 bin/dev
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+WATCH_PATHS=(app.rb boot.rb config.ru falcon.rb domain ui lib config db)
+
+bundle exec falcon host &
+FALCON_PID=$!
+WATCHER_PID=
+
+cleanup() {
+  [ -n "$WATCHER_PID" ] && kill "$WATCHER_PID" 2>/dev/null || true
+  kill "$FALCON_PID" 2>/dev/null || true
+  wait "$FALCON_PID" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+reload() {
+  echo "bin/dev: change detected, reloading workers (HUP $FALCON_PID)"
+  kill -HUP "$FALCON_PID"
+}
+
+if command -v watchexec >/dev/null 2>&1; then
+  # --postpone: don't fire on start. Each run is a plain HUP, so watchexec
+  # never needs to kill a previous invocation.
+  watchexec --postpone --exts rb,ru,yml \
+    $(printf -- '--watch %s ' "${WATCH_PATHS[@]}") \
+    -- kill -HUP "$FALCON_PID" &
+  WATCHER_PID=$!
+elif command -v fswatch >/dev/null 2>&1; then
+  fswatch -o -l 0.3 -e '.*' -i '\.rb$' -i '\.ru$' -i '\.yml$' "${WATCH_PATHS[@]}" \
+    | while read -r _; do reload; done &
+  WATCHER_PID=$!
+else
+  echo "bin/dev: no file watcher found (install watchexec or fswatch); running without reloading" >&2
+fi
+
+wait "$FALCON_PID"
