@@ -1,7 +1,7 @@
 # Sourced Coffee
 
-A coffee shop point-of-sale demo built with [Sidereal](https://github.com/ismasan/sidereal)
-(server-driven reactive web framework) on a [Sourced](https://github.com/ismasan/sourced)
+A coffee shop point-of-sale demo built with [Sidereal](https://ismasan.github.io/sidereal/)
+(server-driven reactive web framework) on a [Sourced](https://github.com/ismasan/sourced/tree/ccc)
 event-sourcing backend.
 
 Cashiers start orders and add products from a catalog, baristas prepare the items, a
