@@ -1,22 +1,30 @@
-module Pages
-  class FulfillmentPage < Pages::Page
+# frozen_string_literal: true
 
-    def initialize(order:, events: [], seq: nil, layout: false)
-      super(layout:)
-      @order = order
-      @events = events
-      @seq = seq || events.last&.seq || 0
-      @interactive = events.last&.seq == @seq
+module Pages
+  # The barista's view of one placed order: start and finish each item.
+  class FulfillmentPage < Page
+    path '/orders/:id/fulfillment'
+
+    on(*Order.handled_messages_for_evolve) do |_evt|
+      browser.patch_elements load(params)
     end
 
-    def page_id = @order.id
+    def self.load(params, _ctx)
+      order, _messages = OrderPage.load_order(params[:id])
+      new(order:)
+    end
+
+    def initialize(order:)
+      @order = order
+    end
+
+    def page_title = "Fulfillment #{@order.id} - Sourced Coffee"
+    def channel_name = "shop.orders.#{@order.id}"
 
     private
 
-    def title = "Fulfillment #{@order.id} - Sourced Coffee"
-
     def container
-      div id: 'main', class: 'with-sidebar' do
+      div id: 'main' do
         div class: 'cards-container' do
           Components::Card(size: 'full') do |c|
             c.header do
@@ -27,15 +35,17 @@ module Pages
             c.content do
               div class: 'order-details' do
                 if @order.created_at
-                  small do
-                    "created at #{@order.created_at.strftime('%Y-%m-%d %H:%M:%S')} by #{@order.created_by}"
-                  end
+                  small { "created at #{format_time(@order.created_at)} by #{@order.created_by}" }
                 end
 
-                a(href: url("/orders/#{@order.id}")) { 'order details' }
+                a(href: "/orders/#{@order.id}") { 'order details' }
               end
 
-              order_items
+              if @order.placed? || @order.fulfilled? || @order.delivered?
+                order_items
+              else
+                p { "This order is #{@order.status}: nothing to fulfill yet." }
+              end
             end
           end
         end
@@ -45,23 +55,23 @@ module Pages
     def order_items
       div class: 'order-items' do
         @order.items.values.each do |item|
-          div class: ['order-item', item.status], id: item.id, data: do
+          div class: ['order-item', item.status], id: "item-#{item.id}" do
             h4 do
               strong { item.product_name }
               span(class: 'item-variant') { item.variant_name }
               span(class: 'item-quantity') { "x #{item.quantity}" }
             end
             div class: 'item-tools' do
-              if item.pending?
-                Sourced::UI::Components::Command(Order::StartItemFulfillment, stream_id: @order.id) do |form|
-                  form.payload_fields(item_id: item.id)
+              if item.pending? && @order.placed?
+                command Order::StartItemFulfillment, key: item.id do |form|
+                  form.payload_fields(order_id: @order.id, item_id: item.id)
                   form.button(class: 'btn pending', type: 'submit') { 'start' }
                 end
               end
 
               if item.started?
-                Sourced::UI::Components::Command(Order::FulfillItem, stream_id: @order.id, item_id: item.id) do |form|
-                  form.payload_fields(item_id: item.id)
+                command Order::FulfillItem, key: item.id do |form|
+                  form.payload_fields(order_id: @order.id, item_id: item.id)
                   form.button(class: 'btn primary', type: 'submit') { 'finish' }
                 end
               end

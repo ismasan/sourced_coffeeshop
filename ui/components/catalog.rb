@@ -1,4 +1,7 @@
+# frozen_string_literal: true
+
 module Components
+  # The product catalog, in a modal. Each variant is an AddItem form.
   class Catalog < BaseComponent
     def initialize(order_id:, category: nil, categories: ::Catalog.categories)
       @order_id = order_id
@@ -18,10 +21,12 @@ module Components
       end
     end
 
+    private
+
     def product_categories
       div class: 'products-categories' do
-        href = url("/orders/#{@order_id}/catalog")
-        form(data: _d.on.change.get(href, content_type: 'form').to_h) do
+        # Changing the category re-fetches this modal with ?cat=...
+        form(data: _d.on.change.get("/orders/#{@order_id}/catalog", content_type: 'form').to_h) do
           select(name: 'cat') do
             @categories.each do |category|
               option(value: category.value, selected: @category == category.value) do
@@ -46,15 +51,16 @@ module Components
         h3(class: 'product-name') { product.name }
         div class: 'product-variants' do
           product.variants.values.each do |variant|
-            Sourced::UI::Components::Command(Order::AddItem, stream_id: @order_id, class: 'nice-form') do |form|
+            command Order::AddItem, key: "#{product.id}-#{variant.id}", class: 'nice-form' do |form|
               form.payload_fields(
-                product_id: product.id, 
+                order_id: @order_id,
+                product_id: product.id,
                 variant_id: variant.id,
                 product_name: product.name,
                 variant_name: variant.name,
                 price: variant.price.cents
               )
-              form.button(type: 'submit', class: 'variant-button', data: _d.on.click.run('$modal = false').to_h) do
+              button(type: 'submit', class: 'variant-button', data: _d.on.click.run('$modal = false').to_h) do
                 span(class: 'variant-name') { variant.name }
                 span(class: 'variant-price') { variant.price.format }
               end

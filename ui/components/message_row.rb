@@ -1,9 +1,13 @@
+# frozen_string_literal: true
+
 module Components
+  # One command or event from the Sourced log.
   class MessageRow < BaseComponent
-    def initialize(event, href: nil, highlighted: false)
-      @event = event
+    def initialize(message, step: nil, href: nil, highlighted: false)
+      @message = message
+      @step = step
       @href = href
-      @is_command = event.is_a?(Sourced::Command)
+      @is_command = message.is_a?(Sourced::Command)
       @highlighted = highlighted
       @classes = [
         'event-card',
@@ -14,23 +18,24 @@ module Components
     end
 
     def view_template
-      div(id: event.id, class: @classes) do
+      div(id: "msg-#{message.id}", class: @classes) do
         div(class: 'event-header') do
-          span(class: 'event-sequence') do
-            detail_ref = _d.on.click.get(@href)
-            a(title: event.stream_id, id: SecureRandom.hex(8), data: detail_ref.to_h) { event.seq }
+          if @step
+            span(class: 'event-sequence') do
+              a(href: @href, title: "View order at step #{@step}") { @step.to_s }
+            end
           end
-          producer_for(event)
+          producer
           span(class: 'event-type') do
-            correlation_ref = _d.on.click.get(url("/events/#{event.id}/correlation"))
-            a(id: SecureRandom.hex(8), data: correlation_ref.to_h) { event.type }
+            # Opens the correlation tree modal: everything caused by the same request.
+            a(data: _d.on.click.get("/messages/#{message.id}/correlation").to_h) { message.type }
           end
-          span(class: 'event-timestamp') { event.created_at.to_s }
-          span(class: 'event-author') { event.metadata[:username].to_s }
+          span(class: 'event-timestamp') { format_time(message.created_at) }
+          span(class: 'event-author') { message.metadata[:username].to_s }
         end
-        if event.payload
-          div(id: dom_id('payload'), class: 'event-payload', data: { show: '$_showPayloads' }) do
-            JSON.pretty_generate(event.payload&.to_h || {})
+        if message.payload
+          div(class: 'event-payload', data: { show: '$_showPayloads' }) do
+            JSON.pretty_generate(message.payload.to_h)
           end
         end
       end
@@ -38,10 +43,10 @@ module Components
 
     private
 
-    attr_reader :event, :href, :is_command
+    attr_reader :message
 
-    def producer_for(event)
-      code(class: 'event-producer') { safe("#{event.metadata[:producer]} &rarr;") } if event.metadata[:producer]
+    def producer
+      code(class: 'event-producer') { safe("#{message.metadata[:producer]} &rarr;") } if message.metadata[:producer]
     end
   end
 end

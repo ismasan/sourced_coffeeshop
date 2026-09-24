@@ -2,30 +2,26 @@
 
 source "https://rubygems.org"
 
-gem 'sinatra', '~> 4.0'
+# Sidereal: server-driven reactive web framework (router, pages, SSE, commands)
+gem 'sidereal', path: '/Users/ismasan/code/personal/gems/sidereal'
+# Sourced "ccc" branch: stream-less, partition-based event sourcing
+gem 'sourced', github: 'ismasan/sourced', branch: 'ccc'
+gem 'sourced-ui', github: 'ismasan/sourced-ui', branch: 'ccc'
 
-gem 'phlex'
-gem 'phlex-sinatra'
 gem 'falcon'
-
-# gem 'datastar'
-# gem 'datastar', path: '/Users/ismasan/code/personal/gems/datastar'
-gem 'dotenv'
-gem 'pg'
-# gem 'sqlite3'
-gem 'plumb'
+# Local datastar SDK: treats server-wrapped socket errors (protocol-http1 >= 0.41) as client disconnects
+gem 'datastar', path: '/Users/ismasan/code/personal/gems/datastar'
+gem 'phlex'
+gem 'plumb', '~> 0.3'
 gem 'sequel'
+gem 'sqlite3'
 gem 'money'
-gem 'sourced', github: 'ismasan/sourced'
-# gem 'sourced', path: '/Users/ismasan/code/personal/gems/sourced'
-# gem 'sourced-ui', path: '/Users/ismasan/code/personal/gems/sourced-ui'
-gem 'sourced-ui', github: 'ismasan/sourced-ui'
+gem 'dotenv'
 gem 'zeitwerk', '~> 2.7'
+gem 'rake'
+gem 'irb'
 
-group :development do
-  gem 'ruby-prof'
-  gem 'benchmark-ips'
+group :development, :test do
   gem 'debug'
-  gem 'rack-unreloader', '~> 2.1'
   gem 'rspec'
 end

@@ -1,12 +1,24 @@
+# frozen_string_literal: true
+
 module Pages
-  class HomePage < Pages::Page
-    def initialize(layout: false)
-      super(layout:)
+  class HomePage < Page
+    path '/'
+
+    # Re-render whenever either read model commits a batch.
+    on OrderListings::Projected, PaymentListings::Projected do |_evt|
+      browser.patch_elements load(params)
+    end
+
+    def self.load(_params, _ctx)
+      new(orders: OrderListings.all, payments: PaymentListings.all)
+    end
+
+    def initialize(orders: [], payments: [])
+      @orders = orders
+      @payments = payments
     end
 
     private
-
-    def title = 'Sourced Coffee'
 
     def container
       div id: 'main' do
@@ -14,32 +26,14 @@ module Pages
           Components::Card(size: 'half') do |c|
             c.header 'Recent orders'
             c.content do
-              Components::OrdersTable(orders: OrderListings.all)
+              Components::OrdersTable(orders: @orders)
             end
           end
 
           Components::Card(size: 'half') do |c|
             c.header 'Payments'
             c.content do
-              table(id: 'payments-table', class: 'orders-table') do 
-                thead do
-                  th { 'status' }
-                  th(class: 'cell--order-id') { 'Order ID' }
-                  th(class: 'cell--datetime') { 'created at' }
-                  th { 'amount' }
-                end
-
-                PaymentListings.all.each do |payment|
-                  tr do
-                    td do
-                      Components::StatusBadge(payment[:status])
-                    end
-                    td { a(href: url("/orders/#{payment[:order_id]}")) { payment[:order_id] } }
-                    td { payment[:created_at] }
-                    td(class: 'money') { Money.from_cents(payment[:amount]).format }
-                  end
-                end
-              end
+              Components::PaymentsTable(payments: @payments)
             end
           end
         end

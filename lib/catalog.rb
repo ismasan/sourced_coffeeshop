@@ -2,49 +2,23 @@
 
 require 'yaml'
 
+# The product catalog, loaded once from config/catalog.yml.
 class Catalog
-  StringToSymbol = Types::String.transform(Symbol, &:to_sym)
-  SymbolizedHash = Types::Hash[StringToSymbol, Types::Any]
-
-  # turn {'foo' => { 'bar' => 1}}
-  # into {'foo' => { bar: 1, id: 'foo' }}
-  RecordsWithID = Types::Hash[String, SymbolizedHash].pipeline do |pl|
-    # copy hash keys to product IDs
-    pl.step do |result|
-      hash = result.value.each.with_object({}) do |(id, data), memo|
-        memo[id] = data.merge(id:)
-      end
-      result.valid(hash)
-    end
-  end
-
-  ProductsYAML = RecordsWithID >> Types::Hash[
-    String,
-    Types::Hash[
-      id: String,
-      name: String,
-      categories: [String],
-      variants: RecordsWithID
-    ]
-  ]
-
   class Variant < Types::Data
-    attribute :id, Types::String
-    attribute :name, Types::String
+    attribute :id, String
+    attribute :name, String
     attribute :price, Types::Money
   end
 
   class Product < Types::Data
-    attribute :id, Types::String
-    attribute :name, Types::String
-    attribute :categories, [String]
+    attribute :id, String
+    attribute :name, String
+    attribute :categories, Types::Array[String]
     attribute :variants, Types::Hash[String, Variant]
   end
 
-  Products = ProductsYAML >> Types::Hash[String, Product]
-
   Category = Struct.new(:name, :value, :count) do
-    def <=> (other)
+    def <=>(other)
       name <=> other.name
     end
 
@@ -53,9 +27,15 @@ class Catalog
     end
   end
 
+  # The YAML keys are the product and variant ids.
   def self.load
     data = YAML.load_file(File.join(__dir__, '..', 'config', 'catalog.yml'))
-    products = Products.parse(data)
+    products = data.to_h do |id, attrs|
+      variants = attrs.fetch('variants').to_h do |variant_id, vattrs|
+        [variant_id, Variant.new(id: variant_id, name: vattrs.fetch('name'), price: vattrs.fetch('price'))]
+      end
+      [id, Product.new(id:, name: attrs.fetch('name'), categories: attrs.fetch('categories'), variants:)]
+    end
     new(products)
   end
 
@@ -64,7 +44,7 @@ class Catalog
   end
 
   %i[search all categories].each do |method|
-    define_singleton_method method do |**args|
+    define_singleton_method(method) do |**args|
       instance.send(method, **args)
     end
   end
@@ -88,26 +68,14 @@ class Catalog
     products[id]
   end
 
-  ByCategory = ->(category) do
-    proc do |list|
-      list.filter do |product|
-        product.categories.include?(category)
-      end
-    end
-  end
-
   def search(category: nil)
-    query = ->(list) { list }
-    query = query >> ByCategory.(category) unless category.nil? || category == ALL
-    query.(all)
+    return all if category.nil? || category == ALL
+
+    all.select { |product| product.categories.include?(category) }
   end
 
   def all
     @products.values
-  end
-
-  def by_category(category)
-    @category_index[category] || []
   end
 
   private def build_category_index

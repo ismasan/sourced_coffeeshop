@@ -1,81 +1,79 @@
 # frozen_string_literal: true
 
+require 'fileutils'
+require 'json'
+require 'time'
 require 'zeitwerk'
-require 'phlex-sinatra'
 require 'money'
-require 'sourced'
-require 'sourced/ui'
-require 'sourced/ui/components'
 require 'sequel'
+require 'sqlite3'
+require 'sidereal'
+require 'sidereal/integrations/sourced'
+require 'sourced/ui/dashboard'
 require 'dotenv'
-Dotenv.load '.env'
 
-# Setup infrastructure
-CODE_LOADER = Zeitwerk::Loader.new
+Dotenv.load(File.expand_path('.env', __dir__))
 
-CODE_LOADER.push_dir("#{__dir__}/ui")
-CODE_LOADER.push_dir("#{__dir__}/domain")
-CODE_LOADER.push_dir("#{__dir__}/lib")
-
-CODE_LOADER.inflector.inflect(
-  'openai' => 'OpenAI',
-  'ai_expander' => 'AIExpander',
-)
-
-CODE_LOADER.setup
-
-$LOAD_PATH.unshift File.dirname(__FILE__)
-
-# Fix Phlex 2.0.0.rc1 to work with Phlex::Sinatra
-# module Phlex
-#   class SGML
-#     def helpers = @_context.view_context
-#   end
-# end
+# SQLite event store + read models, one file. Relative paths resolve
+# against the app directory, so rake tasks work from anywhere.
+DB_PATH = File.expand_path(ENV.fetch('DATABASE_PATH', 'storage/coffeeshop.db'), __dir__)
+FileUtils.mkdir_p(File.dirname(DB_PATH))
 
 # Money
 I18n.config.available_locales = :en
-Money.default_currency = Money::Currency.new("GBP")
+Money.default_currency = Money::Currency.new('GBP')
 Money.rounding_mode = BigDecimal::ROUND_HALF_EVEN
 Money.locale_backend = nil
 
-DATABASE_URL = ENV.fetch('DOCKER_DATABASE_URL') {ENV.fetch('DATABASE_URL')}
+# Code loading. Everything is eager-loaded so that every message type is
+# defined before Sourced compiles its codec and Sidereal locks its registries.
+CODE_LOADER = Zeitwerk::Loader.new
+CODE_LOADER.push_dir("#{__dir__}/lib")
+CODE_LOADER.push_dir("#{__dir__}/domain")
+CODE_LOADER.push_dir("#{__dir__}/ui")
+CODE_LOADER.setup
+CODE_LOADER.eager_load
 
-# Configure Sourced
+# Each forked Falcon worker loads this file in its own process, so the
+# SQLite connection and the reactors are established fresh per worker.
 Sourced.configure do |config|
-  unless ENV['TEST']
-    # config.backend = Sequel.sqlite('./storage/data.db')
-    config.backend = Sequel.connect(DATABASE_URL)
+  # Worker fibers are shared by every consumer group. Reactions such as the
+  # payment confirmation hold a fiber for their duration, so give the runtime
+  # some headroom.
+  config.worker_count = 10
+
+  next if ENV['TEST']
+
+  # IMMEDIATE transactions + a generous busy timeout: the Sourced runtime
+  # runs on the elected leader only, but the other Falcon workers still
+  # append commands from their HTTP requests.
+  config.store = Sequel.sqlite(DB_PATH, timeout: 15_000).tap do |db|
+    db.transaction_mode = :immediate
   end
-
-  config.executor = :async
-
-  config.error_strategy do |s|
-    s.retry(times: 1, after: 1)
-
-    s.on_stop do |exception, message|
-      Sourced.config.logger.error(exception.backtrace.join("\n"))
-    end
-  end
-
-  # Worker config. These run as fibers within the Falcon process
-  # config.worker_count = 10                 # Worker fibers per process (default: 2)
-  config.worker_batch_size = 200
-  # config.catchup_interval = 5       # Seconds between safety-net polls (default: 5)
-  # config.max_drain_rounds = 10      # Max messages per reactor pickup before re-enqueue (default: 10)
-  config.housekeeping_count = 1                   # Housekeeper fibers per process (default: 1)
-  config.housekeeping_interval = 3               # Seconds between scheduling cycles (default: 3)
-  config.housekeeping_heartbeat_interval = 5     # Seconds between worker heartbeats (default: 5)
-  config.housekeeping_claim_ttl_seconds = 120    # Seconds before stale claims are reaped (default: 120)
 end
 
-Sourced.config.backend.install unless Sourced.config.backend.installed?
-
-# Register Sourced deciders and reactors
 Sourced.register(Order)
-Sourced.register(OrderListings)
 Sourced.register(Payment)
+Sourced.register(OrderListings)
 Sourced.register(PaymentListings)
 Sourced.register(Deliverables)
 
-Zeitwerk::Loader.eager_load_all if ENV['RACK_ENV'] == 'production'
+# Bridge Sidereal to the Sourced store at runtime only. In TEST the specs
+# drive deciders and projectors directly against an in-memory store.
+unless ENV['TEST']
+  Sidereal.configure do |c|
+    # Cross-process pubsub + leader election (unix socket + file lock under
+    # ./storage), so SSE updates fan out across Falcon workers.
+    c.use_file_system!(dir: File.expand_path('storage', __dir__))
+    # Sourced's SQLite store + dispatcher instead of Sidereal's own, plus the
+    # error bridge that turns Sourced retries/failures into UI toasts. Pins
+    # the Sourced runtime to the elected leader process.
+    c.use Sidereal::Integrations::Sourced
+  end
+end
+
+# Server-side log of terminal failures, on top of the toasts in the UI.
+Sidereal.exceptions.on_failure do |report|
+  Sourced.config.logger.error("#{report.exception.class}: #{report.exception.message}")
+  Sourced.config.logger.error(Array(report.exception.backtrace).join("\n"))
+end

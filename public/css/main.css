@@ -3,39 +3,6 @@
   --sidebar-width: 530px;
 }
 
-@view-transition {
-  navigation: auto;
-}
-
-::view-transition-old(main-content) {
-  animation: slidePageOut 0.3s ease both;
-}
-::view-transition-new(main-content) {
-  animation: slidePageIn 0.3s ease both;
-}
-
-@keyframes slidePageOut {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-}
-
-@keyframes slidePageIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
 * {
   margin: 0;
   padding: 0;
@@ -110,7 +77,6 @@ body {
 /* Main Layout */
 #main {
   padding: 2rem 2rem 0 2rem;
-  view-transition-name: main-content;
 }
 
 #sidebar {
@@ -1358,4 +1324,83 @@ button.contactless {
   top: 10px;
   left: 0;
   background: var(--line-color);
+}
+
+/* ---- Sidereal command forms ---- */
+/* Sidereal wraps each editable field in a .command-field div (for streamed
+   validation errors); let it take the space the bare input used to. */
+.input-row .command-field {
+  flex: 1;
+  display: flex;
+}
+.input-row .command-field input[type="text"] {
+  width: 100%;
+}
+.item-details .item-quantity label {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.item-details .item-quantity .command-field {
+  flex: 1;
+}
+.item-details .item-quantity input[type="number"] {
+  width: 100%;
+  max-width: 10rem;
+}
+
+/* History pagination: step links share the look of the buttons. */
+#event-list .pagination a.pager-button {
+  padding: 6px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #ffffff;
+  color: #4CAF50;
+  border: 2px solid #4CAF50;
+  border-radius: 6px;
+  text-decoration: none;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+#event-list .pagination a.pager-button:hover {
+  background: #4CAF50;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+.status-badge.fulfilled, .status-badge.paid, .status-badge.ready {
+  background: #4CAF50;
+}
+.status-badge.delivered {
+  background: #2f855a;
+}
+.status-badge.started, .status-badge.processing {
+  background: orange;
+}
+/* Snapshot notice in the order card header (time travel) */
+.audit-notice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75em;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #666666;
+}
+.audit-notice__label {
+  padding: 0.2em 0.6em;
+  border: 1px solid #d0d0d0;
+  border-radius: 0.25em;
+  background: #f3f4f6;
+  color: #555555;
+}
+.audit-notice__link {
+  color: #4CAF50;
+  text-decoration: none;
+  font-weight: 600;
+}
+.audit-notice__link:hover {
+  text-decoration: underline;
 }

@@ -1,40 +1,27 @@
+# frozen_string_literal: true
+
 module Pages
-  class Page < BaseComponent
-    def initialize(layout: false)
-      @layout = layout
-    end
+  # Base for all pages. A page renders a `#container` root (the element
+  # Datastar morphs when the page is re-rendered over SSE) and, by default,
+  # subscribes to every channel under `shop.` so list pages see all orders
+  # and payments. Pages scoped to one order narrow this down.
+  class Page < Sidereal::Page
+    include ViewHelpers
+
+    def page_title = 'Sourced Coffee'
+    def show_nav? = true
+    def channel_name = 'shop.>'
 
     def view_template
-      if @layout
-        Layouts::Layout(title:) do
-          wrapper
-        end
-      else
-        wrapper
+      div(id: 'container', class: 'container') do
+        container
       end
     end
 
     private
 
-    def title = 'Page'
-    def page_id = self.class.name
-
-    def wrapper
-      div(
-        id: 'container', 
-        class: 'container',
-          data: { signals: JSON.generate(page_signals) }
-      ) do
-        container
-      end
-    end
-
     def container
-      h1 { title }
-    end
-
-    def page_signals
-      { page_key: self.class.name, page_id: }
+      h1 { page_title }
     end
   end
 end

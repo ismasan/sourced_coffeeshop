@@ -1,11 +1,5 @@
-require 'rack/unreloader'
-require 'sourced/ui/dashboard'
 require_relative 'boot'
 require_relative 'app'
-
-Unreloader = Rack::Unreloader.new(subclasses: %w[Sinatra::Base]) { App }
-Unreloader.require './app.rb'
-Dir['./ui/**/*.rb'].each { |file| Unreloader.require file }
 
 Sourced::UI::Dashboard.configure do |config|
   config.header_links([
@@ -18,6 +12,6 @@ map '/sourced' do
 end
 
 map '/' do
-  use Rack::Static, urls: ['/assets', '/js'], root: 'public'
-  run Unreloader
+  use Rack::Static, urls: ['/css', '/images', '/js'], root: 'public'
+  run App
 end

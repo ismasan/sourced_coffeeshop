@@ -1,43 +1,43 @@
-class PaymentListings < Sourced::Projector::EventSourced
-  DATA_DIR = './storage/payments'
+# frozen_string_literal: true
 
-  module System
-    Updated = ::Sourced::Event.define('payment_listings.system.updated')
-  end
+# One row per payment in the +payments+ table, for the home page's payments
+# table. Publishes an auto-generated +Projected+ signal (attribute:
+# payment_id) after each committed batch.
+class PaymentListings < Sourced::Projector::StateStored
+  consumer_group 'payment_listings'
+  partition_by :payment_id
+
+  TABLE = :payments
+
+  def self.dataset = Sourced.store.db[TABLE]
 
   def self.all(limit: 100)
-    list = Dir[File.join(DATA_DIR, '*.json')].map do |file|
-      JSON.parse(File.read(file), symbolize_names: true)
-    end.sort_by { |r| r[:sort] }.reverse
-
-    limit ? list.take(limit) : list
+    dataset.order(Sequel.desc(:created_at)).limit(limit).all
   end
 
-  # This block runs in a transaction when handling events
-  # Just write a JSON representation of these listings
-  sync do |state:, events:, replaying:|
-    path = File.join(DATA_DIR, "#{state[:id]}.json")
-
-    FileUtils.mkdir_p(DATA_DIR)
-    File.write(path, JSON.pretty_generate(state.to_h))
+  def self.on_reset
+    dataset.delete
   end
 
-  sync do |state:, events:, replaying:|
-    Sourced.config.pubsub.publish('system', events.last.follow(System::Updated))
+  state do |values|
+    self.class.dataset.where(payment_id: values[:payment_id]).first ||
+      { payment_id: values[:payment_id], order_id: nil, status: 'pending', amount: 0, created_at: nil }
   end
 
-  state do |id|
-    { id:, status: 'started', created_at: nil, sort: 0, order_id: nil, amount: 0 }
+  evolve Payment::Started do |state, event|
+    state[:order_id] = event.payload.order_id
+    state[:amount] = event.payload.amount
+    state[:status] = 'started'
+    state[:created_at] = event.created_at.iso8601
   end
 
-  event Payment::Started do |listing, event|
-    listing[:created_at] = event.created_at.to_s
-    listing[:sort] = event.created_at.to_i
-    listing[:order_id] = event.payload.order_id
-    listing[:amount] = event.payload.amount
+  evolve Payment::Confirmed do |state, _event|
+    state[:status] = 'confirmed'
   end
 
-  event Payment::Confirmed do |listing, event|
-    listing[:status] = 'confirmed'
+  sync do |state:, **|
+    next unless state[:order_id]
+
+    self.class.dataset.insert_conflict(:replace).insert(state)
   end
 end

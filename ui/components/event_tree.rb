@@ -1,4 +1,8 @@
+# frozen_string_literal: true
+
 module Components
+  # Messages sharing a correlation id, as a causation tree: which message
+  # caused which. Rendered in a modal from the history sidebar.
   class EventTree < BaseComponent
     class Modal < BaseComponent
       def initialize(**kargs)
@@ -10,10 +14,7 @@ module Components
           c.tools do
             div(class: 'switches') do
               label(class: 'toggle-payloads') do
-                data = _d.on.change.run('$_showPayloads = !$_showPayloads').to_h.merge(
-                  'attr-checked' => '$_showPayloads',
-                )
-                input(type: 'checkbox', id: dom_id('payload-toggle'), data:)
+                input(type: 'checkbox', data: { bind: '_showPayloads' })
                 span { 'show payloads' }
               end
             end
@@ -23,30 +24,27 @@ module Components
       end
     end
 
-    def initialize(events: [], highlighted: nil, href_prefix: 'orders')
-      @events = Sourced::UI::Dashboard.build_causation_tree(events)
+    def initialize(messages: [], highlighted: nil)
+      @nodes = Sourced::UI::Dashboard.build_causation_tree(messages)
       @highlighted = highlighted
-      @href_prefix = href_prefix
     end
 
     def view_template
       div(id: 'events-tree', class: 'events-timeline') do
         ul(class: 'tree tree-view') do
-          @events.each do |node|
+          @nodes.each do |node|
             render_node(node)
           end
         end
       end
     end
 
+    private
+
     def render_node(node)
       li do
-        event = node.message
-        MessageRow(
-          event,
-          href: nil,
-          highlighted: @highlighted == event.id
-        )
+        message = node.message
+        MessageRow(message, highlighted: @highlighted == message.id)
 
         if node.children.any?
           ul do
@@ -56,14 +54,6 @@ module Components
           end
         end
       end
-    end
-
-    def producer_for(event)
-      code { "[#{event.metadata[:producer]}] " } if event.metadata[:producer]
-    end
-
-    private def is_command?(event)
-      event.id == event.causation_id
     end
   end
 end

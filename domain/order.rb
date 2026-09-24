@@ -1,30 +1,104 @@
-class Order < Sourced::Actor
-  module System
-    Updated = ::Sourced::Event.define('orders.system.updated')
+# frozen_string_literal: true
+
+require 'securerandom'
+
+# The Order decider: the write model for a single coffee shop order.
+#
+# Every command and event carries an +order_id+, which is the partition key.
+# Sourced reads the partition (all messages sharing that order_id) to rebuild
+# +State+ before handling each command, and serialises commands per partition.
+class Order < Sourced::Decider
+  consumer_group 'orders'
+  partition_by :order_id
+
+  VAT = 0.135
+
+  # Human-friendly order ids, ex. "O20260924-8F443625"
+  def self.new_id
+    "O#{Time.now.strftime('%Y%m%d')}-#{SecureRandom.hex(4).upcase}"
   end
 
-  # This runs in the same transaction
-  # as commiting new events to the backend
-  # Here we publish an ephemeral event
-  # so that the UI can react to it
-  # In future, Sourced will have a special DSL for this
-  sync do |state:, command:, events:|
-    Sourced.config.pubsub.publish('system', command.follow(System::Updated))
+  # Commands and events that belong to one order's stream: used to filter
+  # the partition read that drives the order page's history sidebar.
+  def self.display_types
+    (handled_commands + handled_messages_for_evolve).uniq.map(&:type)
   end
 
-  Start = Sourced::Command.define('orders.start')
-  Started = Sourced::Event.define('orders.started')
+  # ---- Commands ----
+
+  Start = Sourced::Command.define('orders.start') do
+    attribute :order_id, Types::String.present
+  end
 
   AddItem = Sourced::Command.define('orders.add_item') do
+    attribute :order_id, Types::String.present
     attribute :product_id, Types::String.present
     attribute :variant_id, Types::String.present
     attribute :product_name, Types::String.present
     attribute :variant_name, Types::String.present
-    attribute :quantity, Types::Lax::Integer.default(1)
-    attribute :price, Types::Lax::Integer.default(0)
+    attribute :quantity, Types::Integer.default(1)
+    attribute :price, Types::Integer.default(0)
+  end
+
+  RemoveItem = Sourced::Command.define('orders.remove_item') do
+    attribute :order_id, Types::String.present
+    attribute :item_id, Types::String.present
+  end
+
+  UpdateItemQuantity = Sourced::Command.define('orders.update_item_quantity') do
+    attribute :order_id, Types::String.present
+    attribute :item_id, Types::String.present
+    attribute :quantity, Integer
+  end
+
+  Cancel = Sourced::Command.define('orders.cancel') do
+    attribute :order_id, Types::String.present
+  end
+
+  Place = Sourced::Command.define('orders.place') do
+    attribute :order_id, Types::String.present
+  end
+
+  SetCustomerName = Sourced::Command.define('orders.set_customer_name') do
+    attribute :order_id, Types::String.present
+    attribute :customer_name, Types::String.present
+  end
+
+  StartItemFulfillment = Sourced::Command.define('orders.start_item_fulfillment') do
+    attribute :order_id, Types::String.present
+    attribute :item_id, Types::String.present
+  end
+
+  FulfillItem = Sourced::Command.define('orders.fulfill_item') do
+    attribute :order_id, Types::String.present
+    attribute :item_id, Types::String.present
+  end
+
+  FulfillOrder = Sourced::Command.define('orders.fulfill_order') do
+    attribute :order_id, Types::String.present
+  end
+
+  StartPayment = Sourced::Command.define('orders.start_payment') do
+    attribute :order_id, Types::String.present
+  end
+
+  ConfirmPayment = Sourced::Command.define('orders.confirm_payment') do
+    attribute :order_id, Types::String.present
+    attribute :payment_id, Types::String.present
+  end
+
+  DeliverOrder = Sourced::Command.define('orders.deliver_order') do
+    attribute :order_id, Types::String.present
+  end
+
+  # ---- Events ----
+
+  Started = Sourced::Event.define('orders.started') do
+    attribute :order_id, String
   end
 
   ItemAdded = Sourced::Event.define('orders.item_added') do
+    attribute :order_id, String
     attribute :product_id, String
     attribute :variant_id, String
     attribute :product_name, String
@@ -33,74 +107,61 @@ class Order < Sourced::Actor
     attribute :price, Integer
   end
 
-  RemoveItem = Sourced::Command.define('orders.remove_item') do
-    attribute :item_id, Types::String.present
-  end
-
   ItemRemoved = Sourced::Event.define('orders.item_removed') do
+    attribute :order_id, String
     attribute :item_id, String
-  end
-
-  UpdateItemQuantity = Sourced::Command.define('orders.update_item_quantity') do
-    attribute :item_id, Types::String.present
-    attribute :quantity, Types::Lax::Integer
   end
 
   ItemQuantityUpdated = Sourced::Event.define('orders.item_quantity_updated') do
-    attribute :item_id, Types::String.present
-    attribute :quantity, Types::Lax::Integer
+    attribute :order_id, String
+    attribute :item_id, String
+    attribute :quantity, Integer
   end
 
-  Cancel = Sourced::Command.define('orders.cancel')
-  Canceled = Sourced::Event.define('orders.canceled')
+  Canceled = Sourced::Event.define('orders.canceled') do
+    attribute :order_id, String
+  end
 
-  Place = Sourced::Command.define('orders.place')
-  Placed = Sourced::Event.define('orders.placed')
-
-  SetCustomerName = Sourced::Command.define('orders.set_customer_name') do
-    attribute :customer_name, Types::String.present
+  Placed = Sourced::Event.define('orders.placed') do
+    attribute :order_id, String
   end
 
   CustomerNameSet = Sourced::Event.define('orders.customer_name_set') do
+    attribute :order_id, String
     attribute :customer_name, String
   end
 
-  # Item fulfillment
-  StartItemFulfillment = Sourced::Command.define('orders.start_item_fulfillment') do
-    attribute :item_id, Types::String.present
-  end
-
   ItemFulfillmentStarted = Sourced::Event.define('orders.item_fulfillment_started') do
+    attribute :order_id, String
     attribute :item_id, String
-  end
-
-  FulfillItem = Sourced::Command.define('orders.fulfill_item') do
-    attribute :item_id, Types::String.present
   end
 
   ItemFulfilled = Sourced::Event.define('orders.item_fulfilled') do
+    attribute :order_id, String
     attribute :item_id, String
   end
 
-  FulfillOrder = Sourced::Command.define('orders.fulfill_order')
-  OrderFulfilled = Sourced::Event.define('orders.order_fulfilled')
+  OrderFulfilled = Sourced::Event.define('orders.order_fulfilled') do
+    attribute :order_id, String
+  end
 
-  StartPayment = Sourced::Command.define('orders.start_payment')
   PaymentStarted = Sourced::Event.define('orders.payment_started') do
-    attribute :payment_id, Types::String
+    attribute :order_id, String
+    attribute :payment_id, String
   end
 
-  ConfirmPayment = Sourced::Command.define('orders.confirm_payment') do
-    attribute :payment_id, Types::String
+  PaymentConfirmed = Sourced::Event.define('orders.payment_confirmed') do
+    attribute :order_id, String
+    attribute :payment_id, String
   end
-  PaymentConfirmed = Sourced::Event.define('orders.payment_confirmed')
 
-  DeliverOrder = Sourced::Command.define('orders.deliver_order')
-  OrderDelivered = Sourced::Event.define('orders.order_delivered')
+  OrderDelivered = Sourced::Event.define('orders.order_delivered') do
+    attribute :order_id, String
+  end
+
+  # ---- State ----
 
   class State
-    VAT = 0.135
-
     Item = Struct.new(:product_id, :variant_id, :product_name, :variant_name, :price, :quantity, :status, keyword_init: true) do
       def total = price * quantity
       def id = [product_id, variant_id].join('-')
@@ -110,24 +171,11 @@ class Order < Sourced::Actor
       def started? = status == :started
       def fulfilled? = status == :fulfilled
 
-      def start!
-        self.status = :started
-      end
-
-      def fulfill!
-        self.status = :fulfilled
-      end
+      def start! = self.status = :started
+      def fulfill! = self.status = :fulfilled
 
       def self.build(product_id:, variant_id:, product_name:, variant_name:, quantity: 1, price: 0, status: :pending)
-        new(
-          product_id:,
-          variant_id:,
-          product_name:,
-          variant_name:,
-          quantity:,
-          price:,
-          status:,
-        )
+        new(product_id:, variant_id:, product_name:, variant_name:, quantity:, price:, status:)
       end
     end
 
@@ -154,31 +202,45 @@ class Order < Sourced::Actor
     def tax = subtotal * VAT
     def total = subtotal + tax
 
+    def new? = status == :new
     def open? = status == :open
     def placed? = status == :placed
+    def fulfilled? = status == :fulfilled
+    def delivered? = status == :delivered
+    def canceled? = status == :canceled
+    def paid? = payment.confirmed?
+    # Ready to hand over to the customer: everything made, and paid for.
+    def deliverable? = fulfilled? && paid?
 
     def add_item(price:, **kargs)
       price = Money.from_cents(price) if price.is_a?(Integer)
 
       item = Item.build(price:, **kargs)
-      if (it = @items[item.id])
-        item.quantity += it.quantity
+      if (existing = @items[item.id])
+        item.quantity += existing.quantity
       end
       @items[item.id] = item
     end
   end
 
-  state do |id|
-    State.new(id)
+  state do |values|
+    State.new(values[:order_id])
   end
+
+  # ---- Command handlers ----
+  #
+  # Commands that don't apply to the current state are silent no-ops rather
+  # than raises: Sourced's default error strategy stops the whole consumer
+  # group when a handler raises, which would halt every order over one stale
+  # click.
 
   command Start do |state, cmd|
-    raise ArgumentError, 'Order already started' if state.status != :new
+    return unless state.new?
 
-    event Started
+    event Started, order_id: cmd.payload.order_id
   end
 
-  event Started do |state, event|
+  evolve Started do |state, event|
     state.status = :open
     state.created_at = event.created_at
     state.created_by = event.metadata[:username]
@@ -187,141 +249,142 @@ class Order < Sourced::Actor
   command AddItem do |state, cmd|
     return unless state.open?
 
-    event ItemAdded, cmd.payload
+    event ItemAdded, cmd.payload.to_h
   end
 
-  event ItemAdded do |state, event|
-    state.add_item(**event.payload)
+  evolve ItemAdded do |state, event|
+    state.add_item(**event.payload.to_h.except(:order_id))
   end
 
   command RemoveItem do |state, cmd|
     return unless state.open? && state.items[cmd.payload.item_id]
 
-    event ItemRemoved, cmd.payload
+    event ItemRemoved, cmd.payload.to_h
   end
 
-  event ItemRemoved do |state, event|
+  evolve ItemRemoved do |state, event|
     state.items.delete(event.payload.item_id)
   end
 
   command UpdateItemQuantity do |state, cmd|
     return unless state.open? && state.items[cmd.payload.item_id]
+    return unless cmd.payload.quantity.positive?
 
-    event ItemQuantityUpdated, cmd.payload
+    event ItemQuantityUpdated, cmd.payload.to_h
   end
 
-  event ItemQuantityUpdated do |state, event|
+  evolve ItemQuantityUpdated do |state, event|
     item = state.items[event.payload.item_id]
-    item.quantity = event.payload.quantity
+    item.quantity = event.payload.quantity if item
   end
 
   command Cancel do |state, cmd|
     return unless state.open?
 
-    event Canceled
+    event Canceled, order_id: cmd.payload.order_id
   end
 
-  event Canceled do |state, event|
+  evolve Canceled do |state, _event|
     state.status = :canceled
   end
 
   command Place do |state, cmd|
-    return unless state.open?
+    return unless state.open? && state.items.any?
 
-    event Placed, cmd.payload
+    event Placed, order_id: cmd.payload.order_id
   end
 
-  event Placed do |state, event|
+  evolve Placed do |state, _event|
     state.status = :placed
   end
 
   command SetCustomerName do |state, cmd|
     return unless state.placed?
 
-    event CustomerNameSet, cmd.payload
+    event CustomerNameSet, cmd.payload.to_h
   end
 
-  event CustomerNameSet do |state, event|
+  evolve CustomerNameSet do |state, event|
     state.customer_name = event.payload.customer_name
   end
 
   command StartItemFulfillment do |state, cmd|
     item = state.items[cmd.payload.item_id]
-    return unless item && item.pending?
+    return unless state.placed? && item&.pending?
 
-    event ItemFulfillmentStarted, cmd.payload
+    event ItemFulfillmentStarted, cmd.payload.to_h
   end
 
-  event ItemFulfillmentStarted do |state, event|
-    item = state.items[event.payload.item_id]
-    item.start!
+  evolve ItemFulfillmentStarted do |state, event|
+    state.items[event.payload.item_id]&.start!
   end
 
   command FulfillItem do |state, cmd|
     item = state.items[cmd.payload.item_id]
-    return unless item && item.started?
+    return unless item&.started?
 
-    event ItemFulfilled, cmd.payload
+    event ItemFulfilled, cmd.payload.to_h
   end
 
-  event ItemFulfilled do |state, event|
-    item = state.items[event.payload.item_id]
-    item.fulfill!
+  evolve ItemFulfilled do |state, event|
+    state.items[event.payload.item_id]&.fulfill!
   end
 
+  # Automation: once the last item is fulfilled, fulfill the whole order.
   reaction ItemFulfilled do |state, event|
-    if state.items.values.all?(&:fulfilled?)
-      dispatch(FulfillOrder)
+    if state.placed? && state.items.values.all?(&:fulfilled?)
+      dispatch FulfillOrder, order_id: event.payload.order_id
     end
   end
 
   command FulfillOrder do |state, cmd|
-    if state.items.values.all?(&:fulfilled?)
-      event OrderFulfilled
-    end
+    return unless state.placed? && state.items.values.all?(&:fulfilled?)
+
+    event OrderFulfilled, order_id: cmd.payload.order_id
   end
 
-  event OrderFulfilled do |state, event|
+  evolve OrderFulfilled do |state, _event|
     state.status = :fulfilled
   end
 
   command StartPayment do |state, cmd|
-    return if state.open? || state.payment.status != :pending
+    return if state.new? || state.open? || state.canceled?
+    return unless state.payment.pending?
 
-    event PaymentStarted, payment_id: ['payment', state.id].join('-')
+    event PaymentStarted, order_id: cmd.payload.order_id, payment_id: "payment-#{state.id}"
   end
 
-  event PaymentStarted do |state, event|
+  evolve PaymentStarted do |state, event|
     state.payment.status = :started
     state.payment.id = event.payload.payment_id
   end
 
+  # Automation: hand over to the Payment decider, which talks to the
+  # (simulated) payment provider and reports back with ConfirmPayment.
   reaction PaymentStarted do |state, event|
-    dispatch(
-      Payment::Start, 
-      order_id: state.id, 
+    dispatch Payment::Start,
+      payment_id: event.payload.payment_id,
+      order_id: event.payload.order_id,
       amount: state.total.cents
-    ).to(state.payment.id)
   end
 
   command ConfirmPayment do |state, cmd|
-    return unless state.payment.status == :started
+    return unless state.payment.started? && state.payment.id == cmd.payload.payment_id
 
-    event PaymentConfirmed
+    event PaymentConfirmed, cmd.payload.to_h
   end
 
-  event PaymentConfirmed do |state, event|
+  evolve PaymentConfirmed do |state, _event|
     state.payment.status = :confirmed
   end
 
-      # def fulfilled? = status == :fulfilled
   command DeliverOrder do |state, cmd|
-    # return unless state.fulfilled?
+    return unless state.deliverable?
 
-    event OrderDelivered
+    event OrderDelivered, order_id: cmd.payload.order_id
   end
 
-  event OrderDelivered do |state, event|
+  evolve OrderDelivered do |state, _event|
     state.status = :delivered
   end
 end

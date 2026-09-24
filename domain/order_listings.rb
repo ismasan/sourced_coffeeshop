@@ -1,136 +1,179 @@
 # frozen_string_literal: true
 
-class OrderListings < Sourced::Projector::EventSourced
-  DATA_DIR = './storage/orders'
+require 'json'
+require 'time'
 
-  module System
-    Updated = ::Sourced::Event.define('order_listings.system.updated')
-  end
+# Cross-order read model powering the home, cashier and barista tables:
+# one row per order in the +orders+ table, upserted as the order's events
+# arrive. A +Projected+ signal (attribute: order_id) is auto-generated from
+# +partition_by+ and published by Sidereal::Integrations::Sourced after each
+# committed batch, which is what re-renders the pages listing orders.
+class OrderListings < Sourced::Projector::StateStored
+  consumer_group 'order_listings'
+  partition_by :order_id
 
-  # This block runs in a transaction when handling events
-  # Just write a JSON representation of these listings
-  sync do |state:, events:, replaying:|
-    path = File.join(DATA_DIR, "#{state.id}.json")
+  TABLE = :orders
 
-    if state.status == 'deleted'
-      File.unlink(path) if File.exist?(path)
-    else
-      FileUtils.mkdir_p(DATA_DIR)
-      File.write(path, JSON.pretty_generate(state.to_h))
+  # Read-side value object over an +orders+ row.
+  Listing = Data.define(:order_id, :status, :payment_status, :customer_name, :items, :members, :step, :created_at, :updated_at) do
+    def self.from_row(row)
+      new(**OrderListings.decode_row(row))
     end
-  end
 
-  sync do |state:, events:, replaying:|
-    Sourced.config.pubsub.publish('system', events.last.follow(System::Updated))
-  end
-
-  Items = Types::Hash[Types::Symbol.transform(String, &:to_s), Types::Hash.default { {} }]
-
-  class Listing < Plumb::Types::Data
-    attribute :id, String
-    attribute :items, Items.default { {} }, writer: true
-    attribute :status, Types::String.default('open'), writer: true
-    attribute :seq, Types::Integer.default(0), writer: true
-    attribute :members, Types::Array[String].default { [] }
-    attribute :created_at, Types::Forms::Time, writer: true
-    attribute :updated_at, Types::Forms::Time.nullable, writer: true
-    attribute :payment_status, Types::String.default('--'), writer: true
+    def id = order_id
 
     def total
-      cents = items.values.sum do |item|
-        item[:price].to_i * item[:quantity].to_i  
-      end
-      Money.from_cents(cents)
+      Money.from_cents(items.values.sum { |item| item[:price].to_i * item[:quantity].to_i })
     end
   end
 
-  # Let's give this class a repository interface
-  # So that everything about this data is encapsuated here
-  def self.all(limit: 100)
-    list = Dir[File.join(DATA_DIR, '*.json')].map do |file|
-      JSON.parse(File.read(file), symbolize_names: true)
-    end.map { |r| Listing.parse(r) }.sort_by(&:created_at).reverse
+  BLANK = {
+    order_id: nil,
+    status: 'new',
+    payment_status: '--',
+    customer_name: nil,
+    items: {},
+    members: [],
+    step: 0,
+    created_at: nil,
+    updated_at: nil
+  }.freeze
 
-    limit ? list.take(limit) : list
+  # ---- Row (de)serialization: items and members live in JSON columns ----
+
+  def self.decode_row(row)
+    row.merge(
+      items: JSON.parse(row[:items] || '{}', symbolize_names: true).transform_keys(&:to_s),
+      members: JSON.parse(row[:members] || '[]'),
+      created_at: row[:created_at] && Time.iso8601(row[:created_at]),
+      updated_at: row[:updated_at] && Time.iso8601(row[:updated_at])
+    )
+  end
+
+  def self.encode_row(state)
+    state.merge(
+      items: JSON.generate(state[:items]),
+      members: JSON.generate(state[:members])
+    )
+  end
+
+  # ---- Class-level queries ----
+
+  def self.dataset = Sourced.store.db[TABLE]
+
+  def self.all(limit: 100)
+    dataset.order(Sequel.desc(:created_at)).limit(limit).map { |row| Listing.from_row(row) }
   end
 
   def self.placed
-    all.select { |listing| listing.status == 'placed' }
+    dataset.where(status: 'placed').order(:created_at).map { |row| Listing.from_row(row) }
   end
 
-  state do |id|
-    Listing.new(id:)
+  def self.find(order_id)
+    row = dataset.where(order_id:).first
+    row && Listing.from_row(row)
   end
 
-  # Register all events and commands from Order
-  # So that before_evolve runs before all Order messages
-  evolve_all Order.handled_commands
-  evolve_all Order
-
-  before_evolve do |listing, event|
-    listing.seq = event.seq
-    username = event.metadata[:username]&.downcase
-    listing.members << username if username && !listing.members.include?(username)
-    listing.updated_at = event.created_at
+  def self.on_reset
+    dataset.delete
   end
 
-  event Order::Start do |listing, event|
-    listing.created_at = event.created_at
+  # ---- Projection ----
+
+  state do |values|
+    row = self.class.dataset.where(order_id: values[:order_id]).first
+    if row
+      self.class.decode_row(row).tap do |st|
+        st[:created_at] = st[:created_at]&.iso8601
+        st[:updated_at] = st[:updated_at]&.iso8601
+      end
+    else
+      BLANK.merge(order_id: values[:order_id], items: {}, members: [])
+    end
   end
 
-  event Order::Started do |listing, event|
-    listing.created_at = event.created_at
+  # Every order event bumps the step counter, the updated_at timestamp and
+  # the list of staff (usernames stamped on command metadata by the UI)
+  # who touched the order, then applies the event-specific change.
+  def self.project(*event_classes, &block)
+    event_classes.each do |event_class|
+      evolve(event_class) do |state, event|
+        state[:step] += 1
+        state[:updated_at] = event.created_at.iso8601
+        username = event.metadata[:username]&.downcase
+        state[:members] << username if username && !state[:members].include?(username)
+        instance_exec(state, event, &block) if block
+      end
+    end
   end
 
-  event Order::ItemAdded do |listing, event|
+  project Order::Started do |state, event|
+    state[:status] = 'open'
+    state[:created_at] = event.created_at.iso8601
+  end
+
+  project Order::ItemAdded do |state, event|
     item_id = [event.payload.product_id, event.payload.variant_id].join('-')
-    item = { price: event.payload.price, quantity: 0 }
-
-    listing.items[item_id] ||= item
-    listing.items[item_id][:quantity] += event.payload.quantity
+    item = state[:items][item_id] ||= {
+      name: [event.payload.product_name, event.payload.variant_name].join(' - '),
+      price: event.payload.price,
+      quantity: 0,
+      status: 'pending'
+    }
+    item[:quantity] += event.payload.quantity
   end
 
-  event Order::ItemRemoved do |listing, event|
-    listing.items.delete(event.payload.item_id)
+  project Order::ItemRemoved do |state, event|
+    state[:items].delete(event.payload.item_id)
   end
 
-  event Order::ItemQuantityUpdated do |listing, event|
-    listing.items[event.payload.item_id][:quantity] = event.payload.quantity
+  project Order::ItemQuantityUpdated do |state, event|
+    item = state[:items][event.payload.item_id]
+    item[:quantity] = event.payload.quantity if item
   end
 
-  event Order::Canceled do |listing, event|
-    listing.status = 'canceled'
+  project Order::Canceled do |state, _event|
+    state[:status] = 'canceled'
   end
 
-  event Order::Placed do |listing, event|
-    listing.status = 'placed'
+  project Order::Placed do |state, _event|
+    state[:status] = 'placed'
   end
 
-  event Order::OrderFulfilled do |listing, event|
-    listing.status = 'fulfilled'
+  project Order::CustomerNameSet do |state, event|
+    state[:customer_name] = event.payload.customer_name
   end
 
-  event Order::ItemFulfillmentStarted do |listing, event|
-    listing.items[event.payload.item_id][:status] = 'started'
+  project Order::ItemFulfillmentStarted do |state, event|
+    item = state[:items][event.payload.item_id]
+    item[:status] = 'started' if item
   end
 
-  event Order::ItemFulfilled do |listing, event|
-    listing.items[event.payload.item_id][:status] = 'fulfilled'
+  project Order::ItemFulfilled do |state, event|
+    item = state[:items][event.payload.item_id]
+    item[:status] = 'fulfilled' if item
   end
 
-  event Order::PaymentStarted do |listing, event|
-    listing.payment_status = 'processing'
+  project Order::OrderFulfilled do |state, _event|
+    state[:status] = 'fulfilled'
   end
 
-  event Order::PaymentConfirmed do |listing, event|
-    listing.payment_status = 'paid'
+  project Order::PaymentStarted do |state, _event|
+    state[:payment_status] = 'processing'
   end
 
-  event Order::OrderFulfilled do |listing, event|
-    listing.status = 'fulfilled'
+  project Order::PaymentConfirmed do |state, _event|
+    state[:payment_status] = 'paid'
   end
 
-  event Order::OrderDelivered do |listing, event|
-    listing.status = 'delivered'
+  project Order::OrderDelivered do |state, _event|
+    state[:status] = 'delivered'
+  end
+
+  # Runs inside the store transaction: the row commits with the offset.
+  sync do |state:, **|
+    next unless state[:order_id]
+
+    self.class.dataset.insert_conflict(:replace).insert(self.class.encode_row(state))
   end
 end

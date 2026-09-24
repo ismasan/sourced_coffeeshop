@@ -1,56 +1,66 @@
+# frozen_string_literal: true
+
 module Components
+  # The order's history sidebar: every command and event in the order's
+  # partition, newest first, numbered by step (position in the partition).
+  # Each step links to a frozen snapshot of the order at that step.
   class EventList < BaseComponent
-    def initialize(events:, seq: nil, href_prefix: 'orders', reverse: true)
-      @events = events
-      @first_seq = @events.first&.seq
-      @last_seq = @events.last&.seq
-      @events = @events.reverse if reverse
-      @seq = seq || @last_seq
-      @href_prefix = href_prefix
+    def initialize(messages:, order_id:, step: nil)
+      @messages = messages
+      @order_id = order_id
+      @last_step = messages.length
+      @step = step || @last_step
     end
 
     def view_template
-      div id: 'event-list', data: _d.signals(_showPayloads: false).to_h do
+      # `_showPayloads` is page-local; __ifmissing keeps it across re-renders.
+      div id: 'event-list', data: { 'signals__ifmissing' => { _showPayloads: false }.to_json } do
         div class: 'header' do
-          if @events.any?
-            disabled_back = @first_seq == @seq
-            disabled_forward = @last_seq == @seq
+          div(class: 'history-tools') do
+            h2 { 'History' }
+            pagination if @messages.any?
 
-            div(class: 'history-tools') do
-              h2 { 'History' }
-              span(class: 'pagination') do
-                button(disabled: disabled_back,
-                  data: _d.on.click.get("/#{@href_prefix}/#{@events.first.stream_id}/#{@seq - 1}").to_h) do
-                  safe('&larr;')
-                end
-                button(disabled: disabled_forward,
-                  data: _d.on.click.get("/#{@href_prefix}/#{@events.first.stream_id}/#{@seq + 1}").to_h) do
-                  safe('&rarr;')
-                end
-                span { "sequence: #{@seq} " }
-              end
-
-              div(class: 'switches') do
-                label(class: 'toggle-payloads') do
-                  data = _d.on.change.run('$_showPayloads = !$_showPayloads').to_h.merge(
-                    'attr-checked' => '$_showPayloads',
-                  )
-                  input(type: 'checkbox', id: dom_id('payload-toggle'), data:)
-                  span { 'show payloads' }
-                end
+            div(class: 'switches') do
+              label(class: 'toggle-payloads') do
+                input(type: 'checkbox', data: { bind: '_showPayloads' })
+                span { 'show payloads' }
               end
             end
           end
         end
         div class: 'list' do
-          @events.each do |event|
+          @messages.each_with_index.to_a.reverse.each do |(message, index)|
+            step = index + 1
             MessageRow(
-              event,
-              highlighted: (event.seq == @seq),
-              href: url("/#{@href_prefix}/#{event.stream_id}/#{event.seq}")
+              message,
+              step:,
+              highlighted: step == @step,
+              href: step_href(step)
             )
           end
         end
+      end
+    end
+
+    private
+
+    def step_href(step)
+      step == @last_step ? "/orders/#{@order_id}" : "/orders/#{@order_id}/#{step}"
+    end
+
+    def pagination
+      span(class: 'pagination') do
+        pager_link('←', @step - 1, enabled: @step > 1, title: 'Previous step')
+        pager_link('→', @step + 1, enabled: @step < @last_step, title: 'Next step')
+        span { "step: #{@step} of #{@last_step}" }
+      end
+    end
+
+    def pager_link(label, step, enabled:, title:)
+      if enabled
+        a(class: 'pager-button', href: step_href(step), title:) { label }
+      else
+        button(disabled: true, title:) { label }
       end
     end
   end

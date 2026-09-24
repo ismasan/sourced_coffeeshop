@@ -1,74 +1,87 @@
-class Deliverables < Sourced::Projector::EventSourced
-  DATA_DIR = './storage/deliverables'
+# frozen_string_literal: true
 
-  module System
-    Updated = ::Sourced::Event.define('deliverables.system.updated')
-  end
+# Orders ready to hand over: fulfilled AND paid, but not yet delivered.
+#
+# An event-sourced projector: its state is rebuilt from the order's full
+# history on every batch, so it never has to persist anything but the rows
+# it exposes. It is also an automation. Once an order becomes deliverable it
+# schedules a DeliverOrder command a few seconds later (a grace period during
+# which the barista can deliver by hand from the barista page).
+class Deliverables < Sourced::Projector::EventSourced
+  consumer_group 'deliverables'
+  partition_by :order_id
+
+  TABLE = :deliverables
+  AUTO_DELIVER_AFTER = 5 # seconds
+
+  def self.dataset = Sourced.store.db[TABLE]
 
   def self.all(limit: 100)
-    list = Dir[File.join(DATA_DIR, '*.json')].map do |file|
-      JSON.parse(File.read(file), symbolize_names: true)
-    end.sort_by { |r| r[:sort] }.reverse
-
-    limit ? list.take(limit) : list
+    dataset.order(Sequel.desc(:ready_at)).limit(limit).all
   end
 
-  # This block runs in a transaction when handling events
-  # Just write order listings to JSON files
-  sync do |state:, events:, replaying:|
-    path = File.join(DATA_DIR, "#{state[:id]}.json")
-
-    FileUtils.mkdir_p(DATA_DIR)
-
-    if state[:status] == 'ready'
-      File.write(path, JSON.pretty_generate(state.to_h))
-    elsif state[:status] == 'delivered' && File.exist?(path)
-      File.unlink(path)
-    end
+  def self.on_reset
+    dataset.delete
   end
 
-  sync do |state:, events:, replaying:|
-    # Unless replaying?
-    Sourced.config.pubsub.publish('system', events.last.follow(System::Updated))
-  end
-
-  state do |id|
-    { 
-      id:, 
-      fulfilled: false, 
-      paid: false, 
-      status: 'pending',
-      sort: 0
+  state do |values|
+    {
+      order_id: values[:order_id],
+      customer_name: nil,
+      fulfilled: false,
+      paid: false,
+      delivered: false,
+      ready_at: nil,
+      # id of the event that made the order deliverable, so only the
+      # reaction to that one event schedules the delivery.
+      ready_by: nil
     }
   end
 
-  event Order::OrderFulfilled do |state, event|
-    state[:fulfilled] = true
-    state[:sort] = event.created_at.to_i
-    check_deliverable(state)
+  def self.ready?(state) = state[:fulfilled] && state[:paid] && !state[:delivered]
+
+  def self.check_ready(state, event)
+    return if state[:ready_by] || !ready?(state)
+
+    state[:ready_at] = event.created_at.iso8601
+    state[:ready_by] = event.id
   end
 
-  event Order::PaymentConfirmed do |state, event|
-    state[:paid] = true
-    check_deliverable(state)
-  end
-
-  event Order::CustomerNameSet do |state, event|
+  evolve Order::CustomerNameSet do |state, event|
     state[:customer_name] = event.payload.customer_name
   end
 
-  event Order::OrderDelivered do |state, event|
-    state[:status] = 'delivered'
+  evolve Order::OrderFulfilled do |state, event|
+    state[:fulfilled] = true
+    self.class.check_ready(state, event)
   end
 
-  reaction do |state, event|
-    if state[:status] == 'ready'
-      # Simulate slow command or grace period
-      dispatch(Order::DeliverOrder).at(Time.now + 5)
+  evolve Order::PaymentConfirmed do |state, event|
+    state[:paid] = true
+    self.class.check_ready(state, event)
+  end
+
+  evolve Order::OrderDelivered do |state, _event|
+    state[:delivered] = true
+  end
+
+  sync do |state:, **|
+    if self.class.ready?(state)
+      self.class.dataset.insert_conflict(:replace).insert(
+        order_id: state[:order_id],
+        customer_name: state[:customer_name],
+        ready_at: state[:ready_at]
+      )
+    else
+      self.class.dataset.where(order_id: state[:order_id]).delete
     end
   end
 
-  private def check_deliverable(state)
-    state[:status] = 'ready' if state[:fulfilled] && state[:paid] 
+  # Automation: deliver automatically shortly after the order becomes ready.
+  # DeliverOrder is a no-op on the Order if a human delivered it first.
+  reaction Order::OrderFulfilled, Order::PaymentConfirmed do |state, event|
+    next unless state[:ready_by] == event.id
+
+    dispatch(Order::DeliverOrder, order_id: event.payload.order_id).at(Time.now + AUTO_DELIVER_AFTER)
   end
 end

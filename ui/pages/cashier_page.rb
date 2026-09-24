@@ -1,13 +1,24 @@
-module Pages
-  class CashierPage < Pages::Page
+# frozen_string_literal: true
 
-    def initialize(layout: false)
-      super(layout:)
+module Pages
+  class CashierPage < Page
+    path '/cashier'
+
+    on OrderListings::Projected do |_evt|
+      browser.patch_elements load(params)
     end
 
-    private
+    def self.load(_params, _ctx)
+      new(orders: OrderListings.all)
+    end
 
-    def title = 'Cashier - Sourced Coffee'
+    def initialize(orders: [])
+      @orders = orders
+    end
+
+    def page_title = 'Cashier - Sourced Coffee'
+
+    private
 
     def container
       div id: 'main' do
@@ -22,7 +33,7 @@ module Pages
           Components::Card(size: 'half') do |c|
             c.header 'Recent orders'
             c.content do
-              Components::OrdersTable(orders: OrderListings.all)
+              Components::OrdersTable(orders: @orders)
             end
           end
         end

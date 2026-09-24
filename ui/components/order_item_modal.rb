@@ -1,4 +1,7 @@
+# frozen_string_literal: true
+
 module Components
+  # Edit one order item: change its quantity, or remove it.
   class OrderItemModal < BaseComponent
     def initialize(order:, item_id:)
       @order = order
@@ -23,34 +26,20 @@ module Components
             end
 
             div class: 'item-quantity' do
-              form_id = ['qty', @item.id].join('-')
-
-              Sourced::UI::Components::Command(
-                Order::UpdateItemQuantity, 
-                stream_id: @order.id, 
-                on: ['submit', 'change'],
-                id: form_id,
-                class: 'nice-form') do |form|
-                  form.payload_fields(item_id: @item.id)
-                  form.label do
-                    span { 'Quantity' }
-                    form.number_field(
-                      :quantity, 
-                      value: @item.quantity, 
-                      name: 'quantity', 
-                      class: 'nice-input', 
-                      min: 1, 
-                      required: true, 
-                      step: 1
-                    )
-                  end
+              # Submits on change as well as on submit, so the stepper alone updates the quantity.
+              command Order::UpdateItemQuantity, key: @item.id, on: %w[submit change], class: 'nice-form' do |form|
+                form.payload_fields(order_id: @order.id, item_id: @item.id)
+                label do
+                  span { 'Quantity' }
+                  form.number_field(:quantity, value: @item.quantity, class: 'nice-input', min: 1, required: true, step: 1)
+                end
               end
             end
 
             div class: 'item-remove' do
-              Sourced::UI::Components::Command(Order::RemoveItem, stream_id: @order.id, class: 'nice-form') do |form|
-                form.payload_fields(item_id: @item.id)
-                form.button(class: 'btn danger', type: 'submit', data: _d.on.click.run('$modal = false').to_h) { 'x Remove' }
+              command Order::RemoveItem, key: @item.id, class: 'nice-form' do |form|
+                form.payload_fields(order_id: @order.id, item_id: @item.id)
+                button(class: 'btn danger', type: 'submit', data: _d.on.click.run('$modal = false').to_h) { 'x Remove' }
               end
             end
           end

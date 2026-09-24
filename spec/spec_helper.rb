@@ -2,8 +2,15 @@
 
 ENV['TEST'] = 'true'
 
-require 'debug'
 require 'sourced/testing/rspec'
+require_relative '../boot'
+require 'sequel/core'
+Sequel.extension :migration
+
+# In TEST boot.rb leaves Sourced on an in-memory SQLite store. Create the
+# read model tables there too, so projector specs can exercise their sync
+# blocks and class-level queries.
+Sequel::Migrator.run(Sourced.store.db, File.expand_path('../db/migrations', __dir__))
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|
@@ -11,12 +18,16 @@ RSpec.configure do |config|
   end
 
   config.mock_with :rspec do |mocks|
-    # Prevents you from mocking or stubbing a method that does not exist on
-    # a real object. This is generally recommended, and will default to
-    # `true` in RSpec 4.
     mocks.verify_partial_doubles = true
   end
 
   config.shared_context_metadata_behavior = :apply_to_host_groups
+  config.disable_monkey_patching!
   config.include Sourced::Testing::RSpec
+
+  config.before do
+    OrderListings.on_reset
+    PaymentListings.on_reset
+    Deliverables.on_reset
+  end
 end

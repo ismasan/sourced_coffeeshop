@@ -1,291 +1,133 @@
 # frozen_string_literal: true
 
-require 'sinatra/base'
-require 'datastar'
-require 'sourced/ui'
+# The coffee shop web app.
+#
+# Pages render from the read models (and, for one order, straight from the
+# Sourced log) and subscribe to pubsub channels over SSE. Forms post
+# commands to POST /commands; the app validates them, stamps the session
+# user onto them and appends them to the Sourced store, where the Order and
+# Payment deciders and the projectors pick them up.
+class App < Sidereal::App
+  session secret: ENV.fetch('SESSION_SECRET'), key: 'coffeeshop.session'
+  layout Layouts::Layout
 
-class App < Sinatra::Base
-  helpers Phlex::Sinatra
+  PUBLIC_PATHS = %w[/login /logout].freeze
 
-  enable :sessions
-  enable :method_override
-  set :session_secret, ENV.fetch('SESSION_SECRET')
-
-  User = Data.define(:username)
-
-  helpers do
-    def logged_in?
-      !!session[:username]
-    end
-
-    def current_user
-      @current_user ||= User.new(username: session[:username])
-    end
-
-    def order_id
-      "O#{Time.now.strftime('%Y%m%H')}-#{SecureRandom.hex(4).upcase}"
-    end
-
-    def command_context
-      @command_context ||= Sourced::CommandContext.new(
-        stream_id: order_id,
-        metadata: { 
-          producer: 'UI',
-          username: current_user&.username
-        }
-      )
-    end
-
-    def datastar
-      @datastar ||= Datastar
-        .new(request:, response:, view_context: self, heartbeat: 0.4)
-                    .on_error do |err|
-        puts "Datastar error: #{err}"
-        puts err.backtrace.join("\n")
-      end
-    end
-
-    def open_modal(component)
-      datastar.send(:stream_no_heartbeat) do |sse|
-        sse.patch_elements component
-        sse.patch_signals modal: true
-      end
+  # Everything but the login form needs a username in the session.
+  before do
+    unless logged_in? || PUBLIC_PATHS.include?(request.path_info)
+      redirect '/login', status: 302
     end
   end
 
-  get '/updates/?' do
-    # TODO: here we're listening on a channel
-    # shared by all clients
-    # In reality we should scope by the current session, or tenant, or user, or todo-list
-    # TODO: PG LISTEN allows subsribing to multiple channels
-    # ie pubsub.subscribe(['system'], ['tenant-1'])
-    # This could be beneficial
-    # TODO: the browswer can disconnect (by default Datastar disconnects when the browser tab is not active)
-    # Here we should re-render on reconnect, but NOT on page load.
-    channel = Sourced.config.pubsub.subscribe('system')
-
-    datastar.on_client_disconnect do |*args|
-      Console.info 'client disconnect'
-      channel.stop
-    end
-    datastar.on_server_disconnect do |*args|
-      Console.info 'server disconnect'
-      channel.stop
-    end
-    datastar.on_error do |ex|
-      Console.info "ERROR #{ex}"
-      channel.stop
-    end
-
-    datastar.stream do |sse|
-      Console.info 'client connect'
-      # on connect, we make sure to render the page again
-      # so that browser tabs reconnecting on focus catch up to the latest state
-      # TODO: this block should be similar to the stream below
-      # I need a better way to declare these blocks
-      case sse.signals['page_key']
-      when 'Pages::OrderPage'
-        order, events = Sourced.load(Order, sse.signals['page_id'])
-        sse.patch_elements Pages::OrderPage.new(
-          order: order.state,
-          events:
-        )
-      when 'Pages::FulfillmentPage'
-        order, _ = Sourced.load(Order, sse.signals['page_id'])
-        sse.patch_elements Pages::FulfillmentPage.new(
-          order: order.state,
-        )
-
-      when 'Pages::CashierPage'
-        sse.patch_elements Pages::CashierPage.new
-      when 'Pages::HomePage'
-        sse.patch_elements Pages::HomePage.new
-      when 'Pages::BaristaPage'
-        sse.patch_elements Pages::BaristaPage.new
-      end
-
-      channel.start do |evt, channel|
-        case evt
-        when Order::System::Updated
-          if sse.signals['page_key'] == 'Pages::OrderPage' && sse.signals['page_id'] == evt.stream_id
-            order, events = Sourced.load(Order, evt.stream_id)
-            sse.patch_elements Pages::OrderPage.new(
-              order: order.state,
-              events:
-            )
-          elsif sse.signals['page_key'] == 'Pages::FulfillmentPage' && sse.signals['page_id'] == evt.stream_id
-            order, _ = Sourced.load(Order, evt.stream_id)
-            sse.patch_elements Pages::FulfillmentPage.new(
-              order: order.state,
-            )
-          end
-        when OrderListings::System::Updated
-          case sse.signals['page_key']
-          when 'Pages::HomePage'
-            sse.patch_elements Pages::HomePage.new
-          when 'Pages::CashierPage'
-            sse.patch_elements Pages::CashierPage.new
-          when 'Pages::BaristaPage'
-            sse.patch_elements Pages::BaristaPage.new
-          end
-        when PaymentListings::System::Updated
-          if sse.signals['page_key'] == 'Pages::HomePage'
-            sse.patch_elements Pages::HomePage.new
-          end
-        when Deliverables::System::Updated
-          if sse.signals['page_key'] == 'Pages::BaristaPage'
-            sse.patch_elements Pages::BaristaPage.new
-          end
-        else
-          puts "Unknown event: #{evt}"
-        end
-      end
-    end
+  # Stamp who did it (and from where) onto every command arriving over HTTP.
+  # Events inherit this metadata through correlation, so read models and the
+  # history sidebar can show it.
+  before_command do |cmd|
+    cmd.with_metadata(producer: 'UI', username: session[:username])
   end
 
-  get '/?' do
-    if logged_in?
-      phlex Pages::HomePage.new(layout: true)
+  # Channel routing: one channel per order, one per payment, for everything
+  # that carries the respective id (domain events, projector signals and
+  # system notifications alike). List pages subscribe to `shop.>`, an
+  # order's pages to `shop.orders.<id>`.
+  channel_name do |msg|
+    payload = msg.payload
+    if payload.respond_to?(:order_id) && payload.order_id
+      "shop.orders.#{payload.order_id}"
+    elsif payload.respond_to?(:payment_id) && payload.payment_id
+      "shop.payments.#{payload.payment_id}"
     else
-      phlex Pages::LoginPage.new
+      'shop.system'
     end
   end
 
-  post '/login/?' do
-    form = Types::LoginForm.resolve(params)
-    if form.valid?
-      session[:username] = form.value[:username]
-      redirect '/'
+  # ---- Session ----
+
+  post '/login' do
+    username = request.params['username'].to_s.strip
+    if username.empty?
+      component Pages::LoginPage.new(username:, errors: { username: 'is required' }), status: 422
     else
-      phlex Pages::LoginPage.new(
-        params: form.value,
-        errors: form.errors
-      )
+      session[:username] = username
+      redirect '/', status: 302
     end
   end
 
-  get '/blank' do
-    <<~HTML
-    <!DOCTYPE html>
-    <html>
-      <head>
-      </head>
-      <body></body>
-    </html>
-    HTML
+  get '/logout' do
+    session.clear
+    redirect '/login', status: 302
   end
 
-  get '/logout/?' do
-    session.delete :username
-    redirect '/'
+  # ---- Order snapshots (time travel) ----
+
+  # The order replayed up to the Nth message of its history. Static: no SSE.
+  get '/orders/:id/:step' do |id:, step:|
+    step_int = Integer(step, 10, exception: false)
+    halt 404, 'Not found' unless step_int&.positive?
+
+    page = Pages::OrderPage.load(params, self, step: step_int)
+    halt 404, 'Not found' unless page.valid_step?
+
+    component page
   end
 
-  get '/cashier' do
-    phlex Pages::CashierPage.new(layout: true)
+  # ---- Modals (SSE responses that patch the #modal slot) ----
+
+  get '/orders/:id/catalog' do |id:|
+    open_modal Components::Catalog.new(order_id: id, category: params[:cat])
   end
 
-  get '/barista' do
-    phlex Pages::BaristaPage.new(layout: true)
+  get '/orders/:id/items/:item_id' do |id:, item_id:|
+    order, _messages = Pages::OrderPage.load_order(id)
+    halt 404, 'Not found' unless order.items.key?(item_id)
+
+    open_modal Components::OrderItemModal.new(order:, item_id:)
   end
 
-  get '/orders/:id/?' do |id|
-    order, events = Sourced.load(Order, id)
-    phlex Pages::OrderPage.new(
-      order: order.state, 
-      events:,
-      layout: true
-    )
+  get '/messages/:id/correlation' do |id:|
+    messages = Sourced.store.read_correlation_batch(id)
+    open_modal Components::EventTree::Modal.new(messages:, highlighted: id)
   end
 
-  get '/orders/:id/fulfillment/?' do |id|
-    order, events = Sourced.load(Order, id)
-    raise "order is not placed" if !order.state.placed?
+  # ---- Commands exposed to the browser ----
 
-    phlex Pages::FulfillmentPage.new(
-      order: order.state, 
-      events:,
-      layout: true
-    )
+  # Starting an order navigates to it. The Order decider processes the
+  # command asynchronously; the order page catches up over SSE.
+  handle Order::Start do |cmd|
+    dispatch cmd
+    browser.redirect "/orders/#{cmd.payload.order_id}"
   end
 
-  get '/orders/:id/catalog/?' do |id|
-    open_modal Components::Catalog.new(
-      order_id: id, 
-      category: params[:cat]
-    )
-  end
+  handle Order::AddItem,
+         Order::RemoveItem,
+         Order::UpdateItemQuantity,
+         Order::Cancel,
+         Order::Place,
+         Order::SetCustomerName,
+         Order::StartItemFulfillment,
+         Order::FulfillItem,
+         Order::StartPayment,
+         Order::DeliverOrder
 
-  get '/orders/:id/items/:item_id/?' do |order_id, item_id|
-    order, _ = Sourced.load(Order, order_id)
-    open_modal Components::OrderItemModal.new(
-      order: order.state,
-      item_id:
-    )
-  end
+  # ---- Pages ----
 
-  # Load a todo list up to a given sequence number
-  # Ex. /todo-lists/important-things/34
-  get '/orders/:id/:upto?' do |id, upto|
-    upto = Types::Lax::Integer.parse(upto)
-    order, _ = Sourced.load(Order, id, upto:)
-    # If this is an SSE request, stream the view back to to the browser
-    # If a normal page load, render normally with layout
-    if datastar.sse?
-      datastar.stream do |sse|
-        sse.execute_script <<-JS
-          history.replaceState({}, '', '/orders/#{order.id}/#{upto}')
-        JS
-        sse.patch_elements Pages::OrderPage.new(
-          order: order.state,
-          events: Sourced.history_for(order),
-          seq: upto,
-        )
-      end
-    else
-      phlex Pages::OrderPage.new(
-        order: order.state, 
-        events: Sourced.history_for(order),
-        seq: upto,
-        layout: true
-      )
-    end
-  end
+  page Pages::LoginPage
+  page Pages::HomePage
+  page Pages::CashierPage
+  page Pages::BaristaPage
+  page Pages::OrderPage
+  page Pages::FulfillmentPage
 
-  get '/events/:id/correlation/?' do |id|
-    events = Sourced.config.backend.read_correlation_batch(id)
-    open_modal Components::EventTree::Modal.new(
-      events:,
-      highlighted: id
-    )
-  end
+  private
 
-  post '/commands/start-order' do
-    cmd = command_context.build(params[:command].to_h)
-    raise "Invalid command #{cmd.inspect}" if !cmd.valid?
-    raise "Not an Order::Start command #{cmd.inspect}" if !cmd.is_a?(Order::Start)
+  def logged_in? = !session[:username].to_s.empty?
 
-    Sourced.dispatch(cmd)
-    # datastar.redirect("/orders/#{cmd.stream_id}")
-    # order, _ = Sourced.handle_command(cmd)
-    redirect "/orders/#{cmd.stream_id}"
-  end
-
-  post '/commands/?' do
-    # TODO: eventually we want to check
-    # that a given user is allowed to run specific commands
-    cmd = command_context.build(params[:command].to_h)
-
-    Sourced::UI.streaming_command_errors(cmd, datastar) do |cmd|
-      Sourced.dispatch(cmd)
-      halt 204
+  # Patch the component into the layout's #modal slot and show it.
+  def open_modal(component)
+    browser.stream(heartbeat: false) do |sse|
+      sse.patch_elements component
+      sse.patch_signals modal: true
     end
   end
 end
-
-
-# trap('INT') do
-#   puts('Closing!')
-#   sleep 1
-#   puts('Byebye!')
-#   exit
-# end
