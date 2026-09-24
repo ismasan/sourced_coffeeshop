@@ -4,6 +4,9 @@ A coffee shop point-of-sale demo built with [Sidereal](https://ismasan.github.io
 (server-driven reactive web framework) on a [Sourced](https://github.com/ismasan/sourced/tree/ccc)
 event-sourcing backend.
 
+https://github.com/user-attachments/assets/3f937ffa-6867-40f1-93f0-30497486f599
+
+
 Cashiers start orders and add products from a catalog, baristas prepare the items, a
 simulated payment provider confirms payment, and a small automation delivers the order once it
 is both made and paid. Every screen updates live over Server-Sent Events, and every order page
