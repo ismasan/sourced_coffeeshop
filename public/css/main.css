@@ -774,6 +774,25 @@ td > form .btn {
   width: 100%;
 }
 
+/* Disabled buttons: no colour, no hover/active feedback, whatever the variant. */
+.btn:disabled,
+.btn.disabled,
+.btn.primary:disabled,
+.btn.danger:disabled,
+.btn.pending:disabled,
+.btn:disabled:hover,
+.btn:disabled:active,
+.btn.primary:disabled:hover,
+.btn.danger:disabled:hover,
+.btn.pending:disabled:hover {
+  background: #e0e0e0;
+  border-color: #e0e0e0;
+  color: #999999;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
 /* Select Styles */
 select {
   appearance: none;
