@@ -10,12 +10,13 @@ module Pages
     end
 
     def self.load(params, _ctx)
-      order, _messages = OrderPage.load_order(params[:id])
-      new(order:)
+      order, messages = OrderPage.load_order(params[:id])
+      new(order:, messages:)
     end
 
-    def initialize(order:)
+    def initialize(order:, messages: [])
       @order = order
+      @messages = messages
     end
 
     def page_title = "Fulfillment #{@order.id} - Sourced Coffee"
@@ -24,7 +25,7 @@ module Pages
     private
 
     def container
-      div id: 'main' do
+      div id: 'main', class: 'with-sidebar' do
         div class: 'cards-container' do
           Components::Card(size: 'full') do |c|
             c.header do
@@ -49,6 +50,11 @@ module Pages
             end
           end
         end
+      end
+
+      # Same live history as the order page; step links open snapshots there.
+      div id: 'sidebar' do
+        Components::EventList(messages: @messages, order_id: @order.id)
       end
     end
 
