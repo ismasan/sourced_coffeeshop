@@ -1,17 +1,18 @@
 GIT
   remote: https://github.com/ismasan/sidereal.git
-  revision: 17c6712f5d33697db1faedd44240f89fd7886b2a
+  revision: 31d54e1feda150db491c6be07615f609de6f048b
   specs:
     sidereal (0.1.0)
       async
       brotli
       datastar (~> 1.0.6)
-      fugit
       phlex
-      plumb (~> 0.3)
+      plumb (~> 0.4)
       rack (~> 3)
       rack-session
-      sourced-message (>= 0.2.2)
+      sourced-component (~> 0.1)
+      sourced-message (>= 0.4.0)
+      tsort
 
 GIT
   remote: https://github.com/ismasan/sourced-ui.git
@@ -26,7 +27,7 @@ GIT
 
 GIT
   remote: https://github.com/ismasan/sourced.git
-  revision: 2cbcef97374514d2224bae5a389dfb49325bde7a
+  revision: 6c54a15a00fd17cd6a8006fee7e83ff5b1657c1d
   branch: ccc
   specs:
     sourced (0.0.1)

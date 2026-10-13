@@ -51,10 +51,13 @@ Browser form → POST /commands (Sidereal::App, validates + stamps session user)
 routes (SSE responses patching `#modal`), snapshot route, `handle` for browser-exposed commands,
 `page` registrations.
 
-**Boot** (`boot.rb`): Zeitwerk eager-loads `lib/`, `domain/`, `ui/`; configures Sourced (SQLite at
-`DATABASE_PATH`, default `storage/coffeeshop.db`); registers reactors; wires Sidereal
-(`use_file_system!` for cross-process pubsub/elector + `use Sidereal::Integrations::Sourced`).
-Skipped in `TEST` (specs use an in-memory store).
+**Boot** (`boot.rb`): Zeitwerk eager-loads `lib/`, `domain/`, `ui/`; declares a `db` component in
+`Sidereal.config` (SQLite at `DATABASE_PATH`, default `storage/coffeeshop.db`; in-memory in `TEST`);
+wires Sidereal (`use_file_system!` for cross-process pubsub/elector +
+`use Sidereal::Integrations::Sourced, db: 'db'`, which mounts Sourced's component tree at `sourced`);
+sets `sourced.*` config (e.g. `sourced.workers.count`); registers reactors. Configuration is a
+`sourced-component` tree: boot only declares it. Each Falcon worker builds and starts it; rake tasks
+and specs call `Sidereal.config.build!` before reading `Sourced.store` (nothing starts).
 
 ## Key Technologies
 

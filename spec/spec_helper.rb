@@ -7,9 +7,12 @@ require_relative '../boot'
 require 'sequel/core'
 Sequel.extension :migration
 
-# In TEST boot.rb leaves Sourced on an in-memory SQLite store. Create the
-# read model tables there too, so projector specs can exercise their sync
-# blocks and class-level queries.
+# Build every component (an in-memory 'db' in TEST), so classes can read
+# them. Nothing starts: no pubsub, no workers.
+Sidereal.config.build!
+
+# Install the Sourced tables and read models in the in-memory database, so
+# projector specs can exercise their sync blocks and class-level queries.
 Sequel::Migrator.run(Sourced.store.db, File.expand_path('../db/migrations', __dir__))
 
 RSpec.configure do |config|

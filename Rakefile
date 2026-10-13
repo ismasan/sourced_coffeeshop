@@ -4,6 +4,10 @@ require_relative 'boot'
 require 'sequel/core'
 Sequel.extension :migration
 
+# Tasks read components, which are built when a process starts. Building
+# doesn't start anything: no pubsub, no workers.
+Sidereal.config.build!
+
 MIGRATIONS_DIR = File.expand_path('db/migrations', __dir__)
 
 namespace :db do
