@@ -40,8 +40,8 @@ class Payment < Sourced::Decider
 
   State = Struct.new(:id, :order_id, :amount, :status, :created_at)
 
-  state do |values|
-    State.new(values[:payment_id], nil, 0, :pending, nil)
+  state do
+    State.new(nil, nil, 0, :pending, nil)
   end
 
   command Start do |state, cmd|
@@ -51,6 +51,7 @@ class Payment < Sourced::Decider
   end
 
   evolve Started do |state, event|
+    state.id = event.payload.payment_id
     state.created_at = event.created_at
     state.order_id = event.payload.order_id
     state.amount = event.payload.amount

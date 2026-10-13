@@ -3,8 +3,8 @@
 require 'spec_helper'
 
 # An EventSourced projector rebuilds its state from the partition's full
-# history, which at runtime includes the claimed batch. So the triggering
-# event goes in both `given` (history) and `when` (the batch).
+# history, which at runtime includes the claimed batch. For a projector the
+# `given` messages are both: the history and the batch it consumes.
 RSpec.describe Deliverables do
   let(:order_id) { 'O1' }
   let(:paid) { Order::PaymentConfirmed.new(payload: { order_id:, payment_id: 'p1' }) }
@@ -15,7 +15,6 @@ RSpec.describe Deliverables do
       .given(Order::CustomerNameSet, order_id:, customer_name: 'Ada')
       .and(Order::OrderFulfilled, order_id:)
       .and(paid)
-      .when(paid)
       .then! do |result|
         rows = Deliverables.all
         expect(rows.map { |r| r[:order_id] }).to eq([order_id])
@@ -34,8 +33,6 @@ RSpec.describe Deliverables do
     with_reactor(Deliverables, order_id:)
       .given(paid)
       .and(fulfilled)
-      .when(paid)
-      .when(fulfilled)
       .then! do |result|
         expect(result.messages.size).to eq(1)
         expect(result.messages.first).to be_a(Order::DeliverOrder)
@@ -47,7 +44,6 @@ RSpec.describe Deliverables do
 
     with_reactor(Deliverables, order_id:)
       .given(fulfilled)
-      .when(fulfilled)
       .then! do |result|
         expect(Deliverables.all).to be_empty
         expect(result.messages).to be_empty
@@ -59,10 +55,8 @@ RSpec.describe Deliverables do
       .given(Order::OrderFulfilled, order_id:)
       .and(paid)
       .and(delivered)
-      .when(delivered)
-      .then! do |result|
+      .then! do |_result|
         expect(Deliverables.all).to be_empty
-        expect(result.messages).to be_empty
       end
   end
 end

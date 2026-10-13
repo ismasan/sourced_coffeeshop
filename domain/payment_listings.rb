@@ -19,12 +19,17 @@ class PaymentListings < Sourced::Projector::StateStored
     dataset.delete
   end
 
-  state do |values|
-    self.class.dataset.where(payment_id: values[:payment_id]).first ||
-      { payment_id: values[:payment_id], order_id: nil, status: 'pending', amount: 0, created_at: nil }
+  state do
+    { payment_id: nil, order_id: nil, status: 'pending', amount: 0, created_at: nil }
+  end
+
+  # The payment's stored row, if any, which the claimed events evolve on top of.
+  load_state do |values|
+    self.class.dataset.where(payment_id: values[:payment_id]).first
   end
 
   evolve Payment::Started do |state, event|
+    state[:payment_id] = event.payload.payment_id
     state[:order_id] = event.payload.order_id
     state[:amount] = event.payload.amount
     state[:status] = 'started'

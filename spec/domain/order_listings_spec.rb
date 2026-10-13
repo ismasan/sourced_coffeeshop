@@ -2,9 +2,9 @@
 
 require 'spec_helper'
 
-# A StateStored projector evolves the claimed batch on top of the stored row,
-# so every message goes in `when` (the batch) and `then!` runs the sync block
-# that writes the row.
+# A StateStored projector evolves the claimed batch on top of the stored row.
+# For a projector the `given` messages are the batch it consumes, and `then!`
+# runs the sync block that writes the row.
 RSpec.describe OrderListings do
   let(:order_id) { 'O1' }
   let(:latte) do
@@ -17,8 +17,8 @@ RSpec.describe OrderListings do
 
   it 'projects an open order with its items and staff' do
     with_reactor(OrderListings, order_id:)
-      .when(event(Order::Started, order_id:))
-      .when(event(Order::ItemAdded, **latte))
+      .given(event(Order::Started, order_id:))
+      .given(event(Order::ItemAdded, **latte))
       .then!
 
     listing = OrderListings.find(order_id)
@@ -32,11 +32,11 @@ RSpec.describe OrderListings do
 
   it 'tracks status, fulfillment and payment' do
     with_reactor(OrderListings, order_id:)
-      .when(event(Order::Started, order_id:))
-      .when(event(Order::ItemAdded, **latte))
-      .when(event(Order::Placed, order_id:))
-      .when(event(Order::ItemFulfillmentStarted, order_id:, item_id: 'latte-small'))
-      .when(event(Order::PaymentStarted, order_id:, payment_id: 'p1'))
+      .given(event(Order::Started, order_id:))
+      .given(event(Order::ItemAdded, **latte))
+      .given(event(Order::Placed, order_id:))
+      .given(event(Order::ItemFulfillmentStarted, order_id:, item_id: 'latte-small'))
+      .given(event(Order::PaymentStarted, order_id:, payment_id: 'p1'))
       .then!
 
     expect(OrderListings.placed.map(&:id)).to eq([order_id])
@@ -47,12 +47,12 @@ RSpec.describe OrderListings do
 
   it 'evolves on top of the stored row' do
     with_reactor(OrderListings, order_id:)
-      .when(event(Order::Started, order_id:))
-      .when(event(Order::ItemAdded, **latte))
+      .given(event(Order::Started, order_id:))
+      .given(event(Order::ItemAdded, **latte))
       .then!
 
     with_reactor(OrderListings, order_id:)
-      .when(event(Order::Placed, order_id:))
+      .given(event(Order::Placed, order_id:))
       .then!
 
     listing = OrderListings.find(order_id)
@@ -64,10 +64,10 @@ RSpec.describe OrderListings do
 
   it 'lists orders newest first' do
     with_reactor(OrderListings, order_id: 'O1')
-      .when(Order::Started.new(payload: { order_id: 'O1' }, created_at: Time.now - 60))
+      .given(Order::Started.new(payload: { order_id: 'O1' }, created_at: Time.now - 60))
       .then!
     with_reactor(OrderListings, order_id: 'O2')
-      .when(Order::Started.new(payload: { order_id: 'O2' }))
+      .given(Order::Started.new(payload: { order_id: 'O2' }))
       .then!
 
     expect(OrderListings.all.map(&:id)).to eq(%w[O2 O1])

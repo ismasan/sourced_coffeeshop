@@ -29,6 +29,8 @@ module Pages
       messages = Sourced.store.read_partition({ order_id: }, handled_types: Order.display_types).messages
       evolved = upto ? messages.first(upto) : messages
       order = Order.new({ order_id: }).evolve(evolved)
+      # A step can come before the Started event that sets the id in state.
+      order.id ||= order_id
       [order, messages]
     end
 

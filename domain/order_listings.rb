@@ -80,16 +80,22 @@ class OrderListings < Sourced::Projector::StateStored
 
   # ---- Projection ----
 
-  state do |values|
+  state do
+    BLANK.merge(items: {}, members: [])
+  end
+
+  # The order's stored row, if any, which the claimed events evolve on top of.
+  load_state do |values|
     row = self.class.dataset.where(order_id: values[:order_id]).first
-    if row
-      self.class.decode_row(row).tap do |st|
-        st[:created_at] = st[:created_at]&.iso8601
-        st[:updated_at] = st[:updated_at]&.iso8601
-      end
-    else
-      BLANK.merge(order_id: values[:order_id], items: {}, members: [])
+    row && self.class.decode_row(row).tap do |st|
+      st[:created_at] = st[:created_at]&.iso8601
+      st[:updated_at] = st[:updated_at]&.iso8601
     end
+  end
+
+  # Any order event can come first in a batch; each carries the order's id.
+  before_evolve do |state, event|
+    state[:order_id] ||= event.payload.order_id
   end
 
   # Every order event bumps the step counter, the updated_at timestamp and

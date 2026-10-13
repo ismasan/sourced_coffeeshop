@@ -185,10 +185,10 @@ class Order < Sourced::Decider
       def confirmed? = status == :confirmed
     end
 
-    attr_reader :id, :items, :payment
-    attr_accessor :status, :customer_name, :created_at, :created_by
+    attr_reader :items, :payment
+    attr_accessor :id, :status, :customer_name, :created_at, :created_by
 
-    def initialize(id)
+    def initialize(id = nil)
       @id = id
       @items = {}
       @status = :new
@@ -223,8 +223,13 @@ class Order < Sourced::Decider
     end
   end
 
-  state do |values|
-    State.new(values[:order_id])
+  state do
+    State.new
+  end
+
+  # Every order event carries the order's id.
+  before_evolve do |state, event|
+    state.id ||= event.payload.order_id
   end
 
   # ---- Command handlers ----

@@ -24,9 +24,9 @@ class Deliverables < Sourced::Projector::EventSourced
     dataset.delete
   end
 
-  state do |values|
+  state do
     {
-      order_id: values[:order_id],
+      order_id: nil,
       customer_name: nil,
       fulfilled: false,
       paid: false,
@@ -47,18 +47,23 @@ class Deliverables < Sourced::Projector::EventSourced
     state[:ready_by] = event.id
   end
 
+  # Order events can arrive in any order; each carries the order's id.
+  before_evolve do |state, event|
+    state[:order_id] ||= event.payload.order_id
+  end
+
   evolve Order::CustomerNameSet do |state, event|
     state[:customer_name] = event.payload.customer_name
   end
 
   evolve Order::OrderFulfilled do |state, event|
     state[:fulfilled] = true
-    self.class.check_ready(state, event)
+    Deliverables.check_ready(state, event)
   end
 
   evolve Order::PaymentConfirmed do |state, event|
     state[:paid] = true
-    self.class.check_ready(state, event)
+    Deliverables.check_ready(state, event)
   end
 
   evolve Order::OrderDelivered do |state, _event|
